@@ -9,8 +9,10 @@ from alembic import context
 
 from src import settings
 from src.database import Base
-from src.chat.models import *
-from src.auth.models import *
+from src.message.models import *
+from src.room.models import *
+from src.user.models import *
+from src.storage.models import *
 
 config = context.config
 
