@@ -12,7 +12,7 @@ class User(Base):
     username = Column(String(16), unique=True, nullable=False)
     email = Column(String(255), nullable=False)
     auth_provider = Column(String(255))
-    auth_id = Column(Integer)
+    auth_id = Column(String(255))
     created_at = Column(TIMESTAMP, default=datetime.datetime.now, nullable=False)
     updated_at = Column(TIMESTAMP, default=datetime.datetime.now, onupdate=datetime.datetime.now, nullable=False)
 

@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends
 from starlette.requests import Request
 from sqlalchemy.ext.asyncio import AsyncSession
-from src.database import get_db
+from src.dependencies import get_db
 from src.auth import service
 
 router = APIRouter()
