@@ -22,10 +22,14 @@ oauth.register(
 
 async def login(request: Request):
     redirect_uri = request.url_for("auth_callback")
-    return await oauth.google.authorize_redirect(request, redirect_uri)
+    print("🌀 BEFORE REDIRECT /auth/login session:", dict(request.session))  # тут state ещё нет
+    response = await oauth.google.authorize_redirect(request, redirect_uri)
+    print("✅ AFTER REDIRECT /auth/login session:", dict(request.session))  # тут уже должен быть state
+    return response
 
 
 async def auth_callback(request: Request, db: AsyncSession):
+    print("🌀 BEFORE /auth/callback session:", dict(request.session))  # тут должен быть state, если кука сохранилась
     token = await oauth.google.authorize_access_token(request)
     logger.info(token)
     user_info = await oauth.google.userinfo(token=token)
