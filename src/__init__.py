@@ -1,6 +1,6 @@
 from src.config import settings
-from src.database import Base, get_db
-from src.cache import get_redis
+from src.dependencies import get_db, get_redis
+from src.database import Base
 
 __all__ = [
     "settings",
