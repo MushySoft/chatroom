@@ -1,5 +1,5 @@
-from src.storage.models import FileStorage
+from src.storage.router import router
 
 __all__ = [
-    "FileStorage",
+    "router",
 ]
