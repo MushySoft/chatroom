@@ -2,7 +2,7 @@ from fastapi import Depends, Header
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from authlib.integrations.httpx_client import AsyncOAuth2Client
-from src.dependencies import get_db
+from src.deps import get_db
 from src.core.models import User
 from src.auth.exceptions import AuthException
 
