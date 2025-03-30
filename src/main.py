@@ -40,4 +40,8 @@ async def ping():
     return {"message": "pong"}
 
 from src.auth import router as auth_router
+from src.storage import router as storage_router
+from src.message import router as message_router
 app.include_router(auth_router)
+app.include_router(storage_router)
+app.include_router(message_router)
