@@ -1,5 +1,4 @@
 from fastapi import FastAPI
-from fastapi.openapi.models import APIKey, APIKeyIn, SecuritySchemeType
 from fastapi.openapi.utils import get_openapi
 from starlette.middleware.sessions import SessionMiddleware
 from src.config import settings

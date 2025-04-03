@@ -53,6 +53,22 @@ services:
     networks:
       - chat_network
 
+  nginx:
+    image: nginx:stable-alpine
+    container_name: chat_nginx
+    restart: always
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d
+      - ./nginx/ssl:/etc/letsencrypt
+      - ./nginx/www:/var/www/html
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - chat_backend
+    networks:
+      - chat_network
+
 volumes:
   postgres_data:
   minio_data:
