@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, TIMESTAMP, Boolean, ForeignKey
+from sqlalchemy import Column, Integer, String, TIMESTAMP, Boolean, ForeignKey, Enum
 from sqlalchemy.orm import relationship
 import datetime
 
@@ -18,6 +18,7 @@ class Room(Base):
     creator = relationship("User", back_populates="created_rooms")
     participants = relationship("RoomUser", back_populates="room", cascade="all, delete-orphan")
     messages = relationship("Message", back_populates="room")
+    invitations = relationship("RoomInvitation", back_populates="room", cascade="all, delete-orphan")
 
 
 class RoomUser(Base):
@@ -30,3 +31,30 @@ class RoomUser(Base):
 
     room = relationship("Room", back_populates="participants")
     user = relationship("User", back_populates="room_memberships")
+
+
+class RoomInvitation(Base):
+    __tablename__ = "room_invitations"
+
+    id = Column(Integer, primary_key=True, index=True)
+    room_id = Column(Integer, ForeignKey("rooms.id", ondelete="CASCADE"), nullable=False)
+    sender_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    receiver_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    created_at = Column(TIMESTAMP, default=datetime.datetime.now, nullable=False)
+
+    room = relationship("Room", back_populates="invitations")
+    sender = relationship("User", foreign_keys=[sender_id])
+    receiver = relationship("User", foreign_keys=[receiver_id])
+    status = relationship("RoomInvitationStatus", back_populates="invitation", uselist=False, cascade="all, delete-orphan")
+
+
+class RoomInvitationStatus(Base):
+    __tablename__ = "room_invitation_statuses"
+
+    id = Column(Integer, primary_key=True, index=True)
+    invitation_id = Column(Integer, ForeignKey("room_invitations.id", ondelete="CASCADE"), nullable=False)
+    status = Column(Enum("pending", "accepted", "rejected", name="invitation_status_enum"), nullable=False)
+    updated_at = Column(TIMESTAMP, default=datetime.datetime.now, nullable=False)
+
+    invitation = relationship("RoomInvitation", back_populates="status")
+
