@@ -32,7 +32,7 @@ def upgrade() -> None:
                     sa.Column('id', sa.Integer(), nullable=False),
                     sa.Column('message_id', sa.Integer(), nullable=False),
                     sa.Column('user_id', sa.Integer(), nullable=False),
-                    sa.Column('status', sa.Enum('delivered', 'viewed', 'failed', name='status_enum'), nullable=False),
+                    sa.Column('status', sa.Enum('sent', 'delivered', 'viewed', 'failed', 'deleted', name='message_status_enum'), nullable=False),
                     sa.Column('updated_at', sa.TIMESTAMP(), nullable=False),
                     sa.PrimaryKeyConstraint('id'),
                     sa.UniqueConstraint('message_id')
@@ -70,7 +70,7 @@ def upgrade() -> None:
     op.create_table('user_status',
                     sa.Column('id', sa.Integer(), nullable=False),
                     sa.Column('user_id', sa.Integer(), nullable=False),
-                    sa.Column('status', sa.Enum('acative', 'offline', 'do_don_disturb', name='status_enum'), nullable=False),
+                    sa.Column('status', sa.Enum('active', 'offline', 'do_don_disturb', name='user_status_enum'), nullable=False),
                     sa.Column('updated_at', sa.TIMESTAMP(), nullable=False),
                     sa.PrimaryKeyConstraint('id'),
                     sa.UniqueConstraint('user_id')
