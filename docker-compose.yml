@@ -53,20 +53,6 @@ services:
     networks:
       - chat_network
 
-  nginx:
-    image: nginx:stable-alpine
-    container_name: chat_nginx
-    restart: always
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./nginx/conf.d:/etc/nginx/conf.d
-      - /etc/letsencrypt:/etc/letsencrypt:ro
-    depends_on:
-      - chat_backend
-    networks:
-      - chat_network
 
 volumes:
   postgres_data:
