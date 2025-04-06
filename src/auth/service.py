@@ -20,7 +20,8 @@ oauth.register(
 
 
 async def login(request: Request):
-    redirect_uri = str(request.url_for("auth_callback")).replace("http://", "https://")
+    # redirect_uri = str(request.url_for("auth_callback")).replace("http://", "https://")
+    redirect_uri = str(request.url_for("auth_callback"))
     response = await oauth.google.authorize_redirect(request, redirect_uri)
     return response
 
