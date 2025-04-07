@@ -1,8 +1,4 @@
 services:
-  chat_backend:
-    ports:
-      - "127.0.0.1:8000:8000"
-
   nginx:
     image: nginx:stable-alpine
     container_name: chat_nginx
