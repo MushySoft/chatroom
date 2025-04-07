@@ -1,4 +1,8 @@
 services:
+  chat_backend:
+    networks:
+      - chat_network
+
   nginx:
     image: nginx:stable-alpine
     container_name: chat_nginx
