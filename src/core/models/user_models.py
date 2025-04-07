@@ -28,7 +28,7 @@ class UserStatus(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), unique=True, nullable=False)
-    status = Column(Enum("active", "offline", "do_not_disturb", name="status_enum"), nullable=False)
+    status = Column(Enum("active", "offline", "do_not_disturb", name="user_status_enum"), nullable=False)
     updated_at = Column(TIMESTAMP, default=datetime.datetime.now, onupdate=datetime.datetime.now, nullable=False)
 
     user = relationship("User", back_populates="status")

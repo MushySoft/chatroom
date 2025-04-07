@@ -1,6 +1,6 @@
-from src.room.models import Room, RoomUser
+from src.core.models import RoomInvitation
+from src.room.router import router
 
 __all__ = [
-    "Room",
-    "RoomUser",
+    "router",
 ]

@@ -1,15 +1,29 @@
-from pydantic_settings import BaseSettings
-import os
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
 
 class Settings(BaseSettings):
-    DATABASE_URL: str = os.getenv("DATABASE_URL")
-    REDIS_URL: str = os.getenv("REDIS_URL")
-    SECRET_KEY: str = os.getenv("SECRET_KEY")
-    DEBUG: bool = os.getenv("DEBUG", "False").lower() == "true"
-    GOOGLE_CLIENT_ID: str = os.getenv("GOOGLE_CLIENT_ID")
-    GOOGLE_CLIENT_SECRET: str = os.getenv("GOOGLE_CLIENT_SECRET")
+    DATABASE_URL: str
+    REDIS_URL: str
+    SECRET_KEY: str
+    DEBUG: bool = False
 
-    class Config:
-        env_file = ".env"
+    GOOGLE_CLIENT_ID: str
+    GOOGLE_CLIENT_SECRET: str
+
+    POSTGRES_USER: str
+    POSTGRES_PASSWORD: str
+    POSTGRES_DB: str
+
+    MINIO_ROOT_USER: str
+    MINIO_ROOT_PASSWORD: str
+    MINIO_ENDPOINT: str
+    MINIO_ACCESS_KEY: str
+    MINIO_SECRET_KEY: str
+    MINIO_BUCKET_NAME: str
+
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8"
+    )
 
 settings = Settings()

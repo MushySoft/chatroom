@@ -5,7 +5,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from src.core.models import User, UserStatus
 from src.config import settings
-import os
 import logging
 
 logger = logging.getLogger(__name__)
@@ -21,8 +20,10 @@ oauth.register(
 
 
 async def login(request: Request):
-    redirect_uri = request.url_for("auth_callback")
-    return await oauth.google.authorize_redirect(request, redirect_uri)
+    # redirect_uri = str(request.url_for("auth_callback")).replace("http://", "https://")
+    redirect_uri = str(request.url_for("auth_callback"))
+    response = await oauth.google.authorize_redirect(request, redirect_uri)
+    return response
 
 
 async def auth_callback(request: Request, db: AsyncSession):

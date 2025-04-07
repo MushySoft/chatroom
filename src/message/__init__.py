@@ -1,6 +1,5 @@
-from src.message.models import Message, MessageStatus
+from src.message.router import router
 
 __all__ = [
-    "Message",
-    "MessageStatus",
+    "router",
 ]

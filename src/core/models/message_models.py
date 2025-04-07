@@ -27,7 +27,7 @@ class MessageStatus(Base):
     id = Column(Integer, primary_key=True, index=True)
     message_id = Column(Integer, ForeignKey("messages.id", ondelete="CASCADE"), nullable=False)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    status = Column(Enum("delivered", "viewed", "failed", name="status_enum"), nullable=False)
+    status = Column(Enum("sent", "delivered", "viewed", "failed", "deleted", name="message_status_enum"), nullable=False)
     updated_at = Column(TIMESTAMP, default=datetime.datetime.now, nullable=False)
 
     message = relationship("Message", back_populates="statuses")
