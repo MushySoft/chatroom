@@ -18,7 +18,12 @@ async def send_message(
     redis: Redis = Depends(get_redis),
     current_user: User = Depends(get_current_user)
 ):
-    return await service.send_message(data=data, db=db, redis=redis, current_user=current_user)
+    return await service.send_message(
+        data=data,
+        db=db,
+        redis=redis,
+        current_user=current_user
+    )
 
 
 @router.get("/room/{room_id}", summary="Get messages from a room")
@@ -27,7 +32,11 @@ async def get_messages_by_room(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    return await service.get_messages_by_room(room_id=room_id, db=db, current_user=current_user)
+    return await service.get_messages_by_room(
+        room_id=room_id,
+        db=db,
+        current_user=current_user
+    )
 
 
 @router.get("/{message_id}", summary="Get a message by ID")
@@ -36,7 +45,11 @@ async def get_message_by_id(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    message = await service.get_message_by_id(message_id=message_id, db=db, current_user=current_user)
+    message = await service.get_message_by_id(
+        message_id=message_id,
+        db=db,
+        current_user=current_user
+    )
     if not message:
         raise HTTPException(status_code=404, detail="Message not found or access denied")
     return message
@@ -49,7 +62,11 @@ async def update_message(
     current_user: User = Depends(get_current_user)
 ):
     try:
-        return await service.update_message(data=data, db=db, current_user=current_user)
+        return await service.update_message(
+            data=data,
+            db=db,
+            current_user=current_user
+        )
     except ValueError:
         raise HTTPException(status_code=404, detail="Message not found")
     except PermissionError:
@@ -62,4 +79,8 @@ async def delete_message(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    return await service.delete_message(message_id=message_id, db=db, current_user=current_user)
+    return await service.delete_message(
+        message_id=message_id,
+        db=db,
+        current_user=current_user
+    )

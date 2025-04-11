@@ -26,7 +26,10 @@ async def login(request: Request):
     return response
 
 
-async def auth_callback(request: Request, db: AsyncSession):
+async def auth_callback(
+        request: Request,
+        db: AsyncSession
+):
     token = await oauth.google.authorize_access_token(request)
     logger.info(token)
     user_info = await oauth.google.userinfo(token=token)
@@ -62,4 +65,7 @@ async def auth_callback(request: Request, db: AsyncSession):
 
     await db.commit()
 
-    return {"access_token": token["access_token"], "token_type": "bearer"}
+    return {
+        "access_token": token["access_token"],
+        "token_type": "bearer"
+    }
