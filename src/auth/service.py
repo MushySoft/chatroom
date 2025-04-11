@@ -70,4 +70,4 @@ async def auth_callback(
     #     "access_token": token["access_token"],
     #     "token_type": "bearer"
     # }
-    return RedirectResponse(url=f"http://localhost:5173/welcome?token={token["access_token"]}")
+    return RedirectResponse(url=f'http://localhost:5173/welcome?token={token["access_token"]}')
