@@ -1,6 +1,7 @@
 from fastapi import HTTPException
+from fastapi.responses import RedirectResponse
+from fastapi.requests import Request
 from authlib.integrations.starlette_client import OAuth
-from starlette.requests import Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from src.core.models import User, UserStatus
@@ -65,7 +66,8 @@ async def auth_callback(
 
     await db.commit()
 
-    return {
-        "access_token": token["access_token"],
-        "token_type": "bearer"
-    }
+    # return {
+    #     "access_token": token["access_token"],
+    #     "token_type": "bearer"
+    # }
+    return RedirectResponse(url=f"http://localhost:5173/welcome?token={token["access_token"]}")
