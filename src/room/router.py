@@ -6,7 +6,7 @@ from src.deps import get_db
 from src.core.models import User
 from src.room import service
 from src.room.schemas import (
-    RoomCreate, RoomInvite, RoomInviteRespond
+    RoomCreate, RoomInvite, RoomInviteRespond, RoomWithLastMessageOut, RoomUpdate
 )
 
 router = APIRouter(prefix="/rooms", tags=["rooms"])
@@ -115,3 +115,21 @@ async def get_participants(
         room_id=room_id,
         db=db
     )
+
+
+@router.get("/all", response_model=list[RoomWithLastMessageOut])
+async def get_all_rooms(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    return await service.get_rooms(db, current_user)
+
+
+@router.patch("/{room_id}", summary="Update room settings")
+async def patch_room(
+    room_id: int,
+    data: RoomUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    return await service.update_room(room_id, data, db, current_user)

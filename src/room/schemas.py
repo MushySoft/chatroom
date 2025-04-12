@@ -46,3 +46,27 @@ class RoomOut(BaseModel):
 
     class Config:
         orm_mode = True
+
+
+class LastMessageOut(BaseModel):
+    id: int
+    content: str
+    created_at: datetime
+    sender_id: int
+
+    class Config:
+        orm_mode = True
+
+
+class RoomWithLastMessageOut(BaseModel):
+    id: int
+    name: str
+    is_private: bool
+    created_by: int
+    created_at: datetime
+    last_message: LastMessageOut | None
+
+
+class RoomUpdate(BaseModel):
+    name: str | None = None
+    is_private: bool | None = None
