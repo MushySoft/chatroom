@@ -21,8 +21,7 @@ oauth.register(
 
 
 async def login(request: Request):
-    # redirect_uri = str(request.url_for("auth_callback")).replace("http://", "https://")
-    redirect_uri = str(request.url_for("auth_callback"))
+    redirect_uri = str(request.url_for("auth_callback")).replace("http://", "https://")
     response = await oauth.google.authorize_redirect(request, redirect_uri)
     return response
 
@@ -66,8 +65,4 @@ async def auth_callback(
 
     await db.commit()
 
-    # return {
-    #     "access_token": token["access_token"],
-    #     "token_type": "bearer"
-    # }
-    return RedirectResponse(url=f'http://localhost:3000/?token={token["access_token"]}')
+    return RedirectResponse(url=f'https://mushysoft.online/?token={token["access_token"]}')
