@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.openapi.utils import get_openapi
+from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 from src.config import settings
 
@@ -33,6 +34,16 @@ def custom_openapi():
 
 app.openapi = custom_openapi
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "https://mushysoft.online",   # разрешаем фронту
+        "http://localhost:3000"       # для разработки
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.get("/")
 async def ping():
