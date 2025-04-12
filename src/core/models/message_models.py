@@ -20,6 +20,17 @@ class Message(Base):
     statuses = relationship("MessageStatus", back_populates="message", cascade="all, delete-orphan")
     files = relationship("FileStorage", back_populates="message", cascade="all, delete-orphan")
 
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "room_id": self.room_id,
+            "sender_id": self.sender_id,
+            "content": self.content,
+            "created_at": self.created_at.isoformat(),
+            "updated_at": self.updated_at.isoformat(),
+            "files": [file.file_url for file in self.files] if self.files else []
+        }
+
 
 class MessageStatus(Base):
     __tablename__ = "message_status"
