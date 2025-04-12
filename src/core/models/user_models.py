@@ -15,6 +15,7 @@ class User(Base):
     auth_id = Column(String(255))
     created_at = Column(TIMESTAMP, default=datetime.datetime.now, nullable=False)
     updated_at = Column(TIMESTAMP, default=datetime.datetime.now, onupdate=datetime.datetime.now, nullable=False)
+    avatar_url = Column(String(512), nullable=True)
 
     status = relationship("UserStatus", back_populates="user", uselist=False, cascade="all, delete-orphan")
     created_rooms = relationship("Room", back_populates="creator")
