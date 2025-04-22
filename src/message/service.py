@@ -4,17 +4,17 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, delete, update
 from sqlalchemy.orm import selectinload
 
-from src import get_temp_files, clear_temp_files
+from src import get_temp_files, clear_temp_files, Pagination
 from src.core.models import User, Message, FileStorage, MessageStatus, RoomUser
 
 from src.message.schemas import MessageCreate, MessageUpdate
 
 
 async def send_message(
-    data: MessageCreate,
-    db: AsyncSession,
-    redis: Redis,
-    current_user: User
+        data: MessageCreate,
+        db: AsyncSession,
+        redis: Redis,
+        current_user: User
 ):
     new_msg = Message(
         room_id=data.room_id,
@@ -52,9 +52,9 @@ async def send_message(
 
 
 async def get_message_by_id(
-    message_id: int,
-    db: AsyncSession,
-    current_user: User
+        message_id: int,
+        db: AsyncSession,
+        current_user: User
 ):
     result = await db.execute(
         select(Message)
@@ -84,9 +84,10 @@ async def get_message_by_id(
 
 
 async def get_messages_by_room(
-    room_id: int,
-    db: AsyncSession,
-    current_user: User
+        room_id: int,
+        db: AsyncSession,
+        current_user: User,
+        pagination: Pagination,
 ):
     result = await db.execute(
         select(Message)
@@ -98,6 +99,8 @@ async def get_messages_by_room(
             MessageStatus.status.in_(["delivered", "viewed"])
         )
         .order_by(Message.created_at)
+        .limit(pagination.limit)
+        .offset(pagination.offset)
     )
     messages = result.scalars().all()
 
@@ -115,9 +118,9 @@ async def get_messages_by_room(
 
 
 async def update_message(
-    data: MessageUpdate,
-    db: AsyncSession,
-    current_user: User
+        data: MessageUpdate,
+        db: AsyncSession,
+        current_user: User
 ):
     result = await db.execute(
         select(Message)
@@ -159,11 +162,10 @@ async def update_message(
     return {"message_id": message.id, "status": "updated"}
 
 
-
 async def delete_message(
-    message_id: int,
-    db: AsyncSession,
-    current_user: User
+        message_id: int,
+        db: AsyncSession,
+        current_user: User
 ):
     await db.execute(
         update(MessageStatus)
@@ -175,4 +177,3 @@ async def delete_message(
     )
     await db.commit()
     return {"message_id": message_id, "status": "deleted"}
-

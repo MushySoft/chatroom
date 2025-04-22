@@ -3,6 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from datetime import datetime
 from fastapi import HTTPException
 
+from src import Pagination
 from src.core.models import (
     Room, RoomUser, RoomInvitation, RoomInvitationStatus,
     User, Message
@@ -28,7 +29,11 @@ async def create_room(data: RoomCreate, db: AsyncSession, current_user: User):
     return new_room
 
 
-async def invite_user(data: RoomInvite, db: AsyncSession, current_user: User):
+async def invite_user(
+        data: RoomInvite,
+        db: AsyncSession,
+        current_user: User
+):
     result = await db.execute(
         select(RoomUser).where(
             RoomUser.room_id == data.room_id,
@@ -56,25 +61,41 @@ async def invite_user(data: RoomInvite, db: AsyncSession, current_user: User):
     return {"invitation_id": invitation.id, "status": "pending"}
 
 
-async def get_sent_invites(db: AsyncSession, current_user: User):
+async def get_sent_invites(
+        db: AsyncSession,
+        current_user: User,
+        pagination: Pagination
+):
     result = await db.execute(
         select(RoomInvitation)
         .join(RoomInvitationStatus)
         .where(RoomInvitation.sender_id == current_user.id)
+        .limit(pagination.limit)
+        .offset(pagination.offset)
     )
     return result.scalars().all()
 
 
-async def get_received_invites(db: AsyncSession, current_user: User):
+async def get_received_invites(
+        db: AsyncSession,
+        current_user: User,
+        pagination: Pagination
+):
     result = await db.execute(
         select(RoomInvitation)
         .join(RoomInvitationStatus)
         .where(RoomInvitation.receiver_id == current_user.id)
+        .limit(pagination.limit)
+        .offset(pagination.offset)
     )
     return result.scalars().all()
 
 
-async def respond_to_invite(data: RoomInviteRespond, db: AsyncSession, current_user: User):
+async def respond_to_invite(
+        data: RoomInviteRespond,
+        db: AsyncSession,
+        current_user: User
+):
     result = await db.execute(
         select(RoomInvitation)
         .where(RoomInvitation.id == data.invitation_id)
@@ -102,7 +123,12 @@ async def respond_to_invite(data: RoomInviteRespond, db: AsyncSession, current_u
     return {"status": status}
 
 
-async def remove_user_from_room(room_id: int, user_id: int, db: AsyncSession, current_user: User):
+async def remove_user_from_room(
+        room_id: int,
+        user_id: int,
+        db: AsyncSession,
+        current_user: User
+):
     result = await db.execute(select(Room).where(Room.id == room_id))
     room = result.scalar_one_or_none()
 
@@ -117,7 +143,11 @@ async def remove_user_from_room(room_id: int, user_id: int, db: AsyncSession, cu
     return {"status": "removed"}
 
 
-async def leave_room(room_id: int, db: AsyncSession, current_user: User):
+async def leave_room(
+        room_id: int,
+        db: AsyncSession,
+        current_user: User
+):
     await db.execute(
         delete(RoomUser)
         .where(RoomUser.room_id == room_id, RoomUser.user_id == current_user.id)
@@ -126,28 +156,36 @@ async def leave_room(room_id: int, db: AsyncSession, current_user: User):
     return {"status": "left"}
 
 
-async def get_room_participants(room_id: int, db: AsyncSession):
+async def get_room_participants(
+        room_id: int,
+        db: AsyncSession,
+        pagination: Pagination
+):
     result = await db.execute(
-        select(RoomUser).where(RoomUser.room_id == room_id)
+        select(RoomUser)
+        .where(RoomUser.room_id == room_id)
+        .limit(pagination.limit)
+        .offset(pagination.offset)
     )
     return result.scalars().all()
 
 
 async def get_rooms(
-    db: AsyncSession,
-    current_user: User
+        db: AsyncSession,
+        current_user: User,
+        pagination: Pagination,
 ):
-    # 1. Получить комнаты пользователя
     result = await db.execute(
         select(Room)
         .join(RoomUser)
         .where(RoomUser.user_id == current_user.id)
+        .limit(pagination.limit)
+        .offset(pagination.offset)
     )
     rooms = result.scalars().all()
 
     room_data = []
     for room in rooms:
-        # 2. Последнее сообщение в комнате
         msg_result = await db.execute(
             select(Message)
             .where(Message.room_id == room.id)
@@ -174,10 +212,10 @@ async def get_rooms(
 
 
 async def update_room(
-    room_id: int,
-    data: RoomUpdate,
-    db: AsyncSession,
-    current_user: User
+        room_id: int,
+        data: RoomUpdate,
+        db: AsyncSession,
+        current_user: User
 ):
     result = await db.execute(select(Room).where(Room.id == room_id))
     room = result.scalar_one_or_none()
