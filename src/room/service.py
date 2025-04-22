@@ -2,8 +2,18 @@ from sqlalchemy import select, delete, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from datetime import datetime
 from fastapi import HTTPException
+from redis import Redis
 
 from src import Pagination
+from src.cache import (
+    get_cached_rooms,
+    set_cached_rooms,
+    get_cached_participants,
+    set_cached_participants,
+    delete_cached_participants,
+    get_cached_invites,
+    set_cached_invites,
+)
 from src.core.models import (
     Room, RoomUser, RoomInvitation, RoomInvitationStatus,
     User, Message
@@ -64,8 +74,18 @@ async def invite_user(
 async def get_sent_invites(
         db: AsyncSession,
         current_user: User,
-        pagination: Pagination
+        pagination: Pagination,
+        redis: Redis
 ):
+    cached = await get_cached_invites(redis,
+                                      current_user.id,
+                                      sent=True,
+                                      limit=pagination.limit,
+                                      offset=pagination.offset
+                                      )
+    if cached:
+        return cached
+
     result = await db.execute(
         select(RoomInvitation)
         .join(RoomInvitationStatus)
@@ -73,14 +93,41 @@ async def get_sent_invites(
         .limit(pagination.limit)
         .offset(pagination.offset)
     )
-    return result.scalars().all()
+    invites = result.scalars().all()
+
+    data = [
+        {
+            "invitation_id": i.id,
+            "room_id": i.room_id,
+            "receiver_id": i.receiver_id,
+            "status": i.status.status,
+            "created_at": i.created_at
+        } for i in invites
+    ]
+    await set_cached_invites(redis,
+                             current_user.id,
+                             sent=True,
+                             limit=pagination.limit,
+                             offset=pagination.offset,
+                             data=data)
+    return data
 
 
 async def get_received_invites(
         db: AsyncSession,
         current_user: User,
-        pagination: Pagination
+        pagination: Pagination,
+        redis: Redis
 ):
+    cached = await get_cached_invites(redis,
+                                      current_user.id,
+                                      sent=False,
+                                      limit=pagination.limit,
+                                      offset=pagination.offset
+                                      )
+    if cached:
+        return cached
+
     result = await db.execute(
         select(RoomInvitation)
         .join(RoomInvitationStatus)
@@ -88,13 +135,31 @@ async def get_received_invites(
         .limit(pagination.limit)
         .offset(pagination.offset)
     )
-    return result.scalars().all()
+    invites = result.scalars().all()
+
+    data = [
+        {
+            "invitation_id": i.id,
+            "room_id": i.room_id,
+            "receiver_id": i.receiver_id,
+            "status": i.status.status,
+            "created_at": i.created_at
+        } for i in invites
+    ]
+    await set_cached_invites(redis,
+                             current_user.id,
+                             sent=True,
+                             limit=pagination.limit,
+                             offset=pagination.offset,
+                             data=data)
+    return data
 
 
 async def respond_to_invite(
         data: RoomInviteRespond,
         db: AsyncSession,
-        current_user: User
+        current_user: User,
+        redis: Redis
 ):
     result = await db.execute(
         select(RoomInvitation)
@@ -118,6 +183,7 @@ async def respond_to_invite(
             user_id=current_user.id,
             joined_at=datetime.now()
         ))
+        await delete_cached_participants(redis, invitation.room_id)
 
     await db.commit()
     return {"status": status}
@@ -127,7 +193,8 @@ async def remove_user_from_room(
         room_id: int,
         user_id: int,
         db: AsyncSession,
-        current_user: User
+        current_user: User,
+        redis: Redis
 ):
     result = await db.execute(select(Room).where(Room.id == room_id))
     room = result.scalar_one_or_none()
@@ -140,41 +207,64 @@ async def remove_user_from_room(
         .where(RoomUser.room_id == room_id, RoomUser.user_id == user_id)
     )
     await db.commit()
+    await delete_cached_participants(redis, room_id)
     return {"status": "removed"}
 
 
 async def leave_room(
         room_id: int,
         db: AsyncSession,
-        current_user: User
+        current_user: User,
+        redis: Redis
 ):
     await db.execute(
         delete(RoomUser)
         .where(RoomUser.room_id == room_id, RoomUser.user_id == current_user.id)
     )
     await db.commit()
+    await delete_cached_participants(redis, room_id)
     return {"status": "left"}
 
 
 async def get_room_participants(
         room_id: int,
         db: AsyncSession,
-        pagination: Pagination
+        pagination: Pagination,
+        redis: Redis
 ):
+    cached = await get_cached_participants(redis, room_id)
+    if cached:
+        return cached
+
     result = await db.execute(
         select(RoomUser)
         .where(RoomUser.room_id == room_id)
         .limit(pagination.limit)
         .offset(pagination.offset)
     )
-    return result.scalars().all()
+    participants = result.scalars().all()
+
+    serialized = [
+        {
+            "user_id": p.user_id,
+            "joined_at": p.joined_at
+        } for p in participants
+    ]
+
+    await set_cached_participants(redis, room_id, serialized)
+    return serialized
 
 
 async def get_rooms(
         db: AsyncSession,
+        redis: Redis,
         current_user: User,
         pagination: Pagination,
 ):
+    cached = await get_cached_rooms(redis, current_user.id, pagination.limit, pagination.offset)
+    if cached:
+        return cached
+
     result = await db.execute(
         select(Room)
         .join(RoomUser)
@@ -208,6 +298,7 @@ async def get_rooms(
             } if last_msg else None
         })
 
+    await set_cached_rooms(redis, current_user.id, pagination.limit, pagination.offset, room_data)
     return room_data
 
 
