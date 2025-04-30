@@ -3,7 +3,7 @@ from redis import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.auth.deps import get_current_user
-from src.deps import get_db, get_redis, PaginationDep
+from src.deps import get_db, get_redis
 from src.pagination import Pagination
 from src.core.models import User
 from src.room import service
@@ -47,7 +47,7 @@ async def invite_user(
 async def sent_invitations(
         db: AsyncSession = Depends(get_db),
         current_user: User = Depends(get_current_user),
-        pagination: Pagination = Depends(PaginationDep),
+        pagination: Pagination = Depends(Pagination),
         redis: Redis = Depends(get_redis)
 ):
     return await service.get_sent_invites(
@@ -62,7 +62,7 @@ async def sent_invitations(
 async def received_invitations(
         db: AsyncSession = Depends(get_db),
         current_user: User = Depends(get_current_user),
-        pagination: Pagination = Depends(PaginationDep),
+        pagination: Pagination = Depends(Pagination),
         redis: Redis = Depends(get_redis)
 ):
     return await service.get_received_invites(
@@ -129,7 +129,7 @@ async def leave_room(
 async def get_participants(
         room_id: int,
         db: AsyncSession = Depends(get_db),
-        pagination: Pagination = Depends(PaginationDep),
+        pagination: Pagination = Depends(Pagination),
         redis: Redis = Depends(get_redis)
 ):
     return await service.get_room_participants(
@@ -144,7 +144,7 @@ async def get_participants(
 async def get_all_rooms(
         db: AsyncSession = Depends(get_db),
         current_user: User = Depends(get_current_user),
-        pagination: Pagination = Depends(PaginationDep),
+        pagination: Pagination = Depends(Pagination),
         redis: Redis = Depends(get_redis)
 ):
     return await service.get_rooms(
