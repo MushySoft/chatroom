@@ -1,10 +1,10 @@
-from fastapi import HTTPException
+from fastapi import HTTPException, Request, Response
 from fastapi.responses import RedirectResponse
-from fastapi.requests import Request
 from authlib.integrations.starlette_client import OAuth
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from src.auth.schemas import UsernameUpdate
+from src.auth.exceptions import AuthException
 from src.core.models import User, UserStatus
 from src.config import settings
 from src import upload_file_to_minio
@@ -25,7 +25,12 @@ oauth.register(
 
 async def login(request: Request):
     redirect_uri = str(request.url_for("auth_callback")).replace("http://", "https://")
-    response = await oauth.google.authorize_redirect(request, redirect_uri)
+    response = await oauth.google.authorize_redirect(
+        request,
+        redirect_uri,
+        access_type="offline",
+        prompt="consent"
+    )
     return response
 
 
@@ -35,6 +40,10 @@ async def auth_callback(
 ):
     token = await oauth.google.authorize_access_token(request)
     logger.info(token)
+
+    access_token = token["access_token"]
+    refresh_token = token.get("refresh_token")  # может быть None
+
     user_info = await oauth.google.userinfo(token=token)
 
     if not user_info:
@@ -42,7 +51,6 @@ async def auth_callback(
 
     avatar_url = user_info.get("picture")
 
-    # Загружаем картинку и заливаем в MinIO
     avatar_minio_url = None
     if avatar_url:
         try:
@@ -66,12 +74,15 @@ async def auth_callback(
             email=user_info["email"],
             auth_provider="google",
             auth_id=user_info["sub"],
-            avatar_url = avatar_minio_url
+            avatar_url=avatar_minio_url,
+            refresh_token=refresh_token
         )
         db.add(user)
         await db.commit()
     elif not user.avatar_url and avatar_minio_url:
         user.avatar_url = avatar_minio_url
+        if refresh_token:
+            user.refresh_token = refresh_token
         await db.commit()
 
     status = await db.execute(
@@ -87,7 +98,17 @@ async def auth_callback(
 
     await db.commit()
 
-    return RedirectResponse(url=f'https://mushysoft.online/?token={token["access_token"]}')
+    response = RedirectResponse('https://mushysoft.online')
+    response.set_cookie(
+        key="access_token",
+        value=access_token,
+        httponly=True,
+        secure=True,
+        samesite="Lax",
+        max_age=60 * 60 * 24 * 7
+    )
+
+    return response
 
 
 async def get_user_info(user: User):
@@ -99,9 +120,9 @@ async def get_user_info(user: User):
     }
 
 async def update_username(
-    data: UsernameUpdate,
-    db: AsyncSession,
-    current_user: User
+        data: UsernameUpdate,
+        db: AsyncSession,
+        current_user: User
 ):
     result = await db.execute(select(User).where(User.username == data.username))
     existing_user = result.scalar_one_or_none()
