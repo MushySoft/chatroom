@@ -43,6 +43,10 @@ class User(Base):
         String(512),
         nullable=True
     )
+    refresh_token = Column(
+        String(1024),
+        nullable=True
+    )
 
     status = relationship(
         "UserStatus",
