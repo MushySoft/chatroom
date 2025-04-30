@@ -1,6 +1,6 @@
-from fastapi import APIRouter, Depends
-from starlette.requests import Request
+from fastapi import APIRouter, Depends, Request, Response
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from src.deps import get_db
 from src.auth import service
 from src.auth.schemas import UsernameUpdate
@@ -27,7 +27,20 @@ async def auth_callback(
 
 
 @router.get("/me", summary="Get current user")
-async def get_me(user: User = Depends(get_current_user)):
+async def get_me(
+    response: Response,
+    result: tuple[User, str | None] = Depends(get_current_user)
+):
+    user, new_token = result
+    if new_token:
+        response.set_cookie(
+            key="access_token",
+            value=new_token,
+            httponly=True,
+            secure=True,
+            samesite="Lax",
+            max_age=60 * 60 * 24 * 7
+        )
     return await service.get_user_info(user)
 
 @router.patch("/username", summary="Update username")
