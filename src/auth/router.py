@@ -50,3 +50,11 @@ async def patch_username(
     current_user: User = Depends(get_current_user)
 ):
     return await service.update_username(data, db, current_user)
+
+
+@router.get("/logout", summary="Logout")
+async def logout(
+        db: AsyncSession = Depends(get_db),
+        current_user: User = Depends(get_current_user)
+):
+    return await service.logout(db, current_user)

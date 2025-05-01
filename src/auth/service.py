@@ -111,12 +111,12 @@ async def auth_callback(
     return response
 
 
-async def get_user_info(user: User):
+async def get_user_info(current_user: User):
     return {
-        "id": user.id,
-        "username": user.username,
-        "email": user.email,
-        "avatar_url": user.avatar_url,
+        "id": current_user.id,
+        "username": current_user.username,
+        "email": current_user.email,
+        "avatar_url": current_user.avatar_url,
     }
 
 async def update_username(
@@ -132,3 +132,29 @@ async def update_username(
     current_user.username = data.username
     await db.commit()
     return {"status": "ok", "new_username": data.username}
+
+
+async def logout(
+        db: AsyncSession,
+        current_user: User
+):
+    user_status = await db.execute(
+        select(UserStatus).where(UserStatus.user_id == current_user.id)
+    )
+    status = user_status.scalar_one_or_none()
+
+    if not status:
+        status = UserStatus(user_id=current_user.id, status="offline")
+        db.add(status)
+    else:
+        status.status = "offline"
+
+    user = await db.execute(
+        select(User).where(User.id == current_user.id)
+    )
+    refresh = user.scalar_one_or_none()
+
+    if refresh:
+        refresh.refresh = None
+
+    await db.commit()
