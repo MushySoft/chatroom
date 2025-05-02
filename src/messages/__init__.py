@@ -1,6 +1,6 @@
-from src.message.router import router
-from src.message.schemas import MessageCreate, MessageUpdate
-from src.message.service import (
+from src.messages.router import router
+from src.messages.schemas import MessageCreate, MessageUpdate
+from src.messages.service import (
     send_message,
     get_message_by_id,
     get_messages_by_room,

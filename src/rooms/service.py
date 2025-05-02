@@ -326,3 +326,10 @@ async def update_room(
     room.updated_at = datetime.now()
     await db.commit()
     return {"status": "updated"}
+
+
+async def get_room_user_ids(room_id: int, db: AsyncSession) -> list[int]:
+    result = await db.execute(
+        select(RoomUser.user_id).where(RoomUser.room_id == room_id)
+    )
+    return result.scalars().all()

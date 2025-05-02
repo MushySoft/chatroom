@@ -4,15 +4,15 @@ from redis.asyncio import Redis
 
 from src import Pagination
 from src.auth.deps import get_current_user
-from src.message.schemas import MessageCreate, MessageUpdate
+from src.messages.schemas import MessageCreate, MessageUpdate
 from src.deps import get_db, get_redis
 from src.core.models import User
-from src.message import service
+from src.messages import service
 
 router = APIRouter(prefix="/messages", tags=["messages"])
 
 
-@router.post("/", summary="Send a message")
+@router.post("/", summary="Send a messages")
 async def send_message(
         data: MessageCreate,
         db: AsyncSession = Depends(get_db),
@@ -42,7 +42,7 @@ async def get_messages_by_room(
     )
 
 
-@router.get("/{message_id}", summary="Get a message by ID")
+@router.get("/{message_id}", summary="Get a messages by ID")
 async def get_message_by_id(
         message_id: int,
         db: AsyncSession = Depends(get_db),
@@ -58,7 +58,7 @@ async def get_message_by_id(
     return message
 
 
-@router.put("/", summary="Update a message")
+@router.put("/", summary="Update a messages")
 async def update_message(
         data: MessageUpdate,
         db: AsyncSession = Depends(get_db),
@@ -76,7 +76,7 @@ async def update_message(
         raise HTTPException(status_code=403, detail="Permission denied")
 
 
-@router.delete("/{message_id}", summary="Delete a message (soft delete)")
+@router.delete("/{message_id}", summary="Delete a messages (soft delete)")
 async def delete_message(
         message_id: int,
         db: AsyncSession = Depends(get_db),

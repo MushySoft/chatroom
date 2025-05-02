@@ -7,7 +7,7 @@ from sqlalchemy.orm import selectinload
 from src import get_temp_files, clear_temp_files, Pagination
 from src.core.models import User, Message, FileStorage, MessageStatus, RoomUser
 
-from src.message.schemas import MessageCreate, MessageUpdate
+from src.messages.schemas import MessageCreate, MessageUpdate
 
 
 async def send_message(
