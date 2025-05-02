@@ -1,10 +1,9 @@
-from fastapi import HTTPException, Request, Response
-from fastapi.responses import RedirectResponse
+from fastapi import HTTPException, Request
+from fastapi.responses import RedirectResponse, JSONResponse
 from authlib.integrations.starlette_client import OAuth
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from src.auth.schemas import UsernameUpdate
-from src.auth.exceptions import AuthException
 from src.core.models import User, UserStatus
 from src.config import settings
 from src import upload_file_to_minio
@@ -24,7 +23,10 @@ oauth.register(
 
 
 async def login(request: Request):
-    redirect_uri = str(request.url_for("auth_callback")).replace("http://", "https://")
+    if settings.DEBUG:
+        redirect_uri = str(request.url_for("auth_callback"))
+    else:
+        redirect_uri = str(request.url_for("auth_callback")).replace("http://", "https://")
     response = await oauth.google.authorize_redirect(
         request,
         redirect_uri,
@@ -98,14 +100,24 @@ async def auth_callback(
 
     await db.commit()
 
-    response = RedirectResponse('https://mushysoft.online')
+    if settings.DEBUG:
+        return JSONResponse({
+            "access_token": access_token,
+            "user": {
+                "id": user.id,
+                "username": user.username,
+                "avatar_url": user.avatar_url
+            }
+        })
+
+    response = RedirectResponse(settings.REDIRECT_URL)
     response.set_cookie(
         key="access_token",
         value=access_token,
         httponly=True,
         secure=True,
         samesite="Lax",
-        max_age=60 * 60 * 24 * 7
+        max_age=settings.TOKEN_EXPIRE_SECONDS,
     )
 
     return response
@@ -138,23 +150,21 @@ async def logout(
         db: AsyncSession,
         current_user: User
 ):
-    user_status = await db.execute(
+    user_status = (await db.execute(
         select(UserStatus).where(UserStatus.user_id == current_user.id)
-    )
-    status = user_status.scalar_one_or_none()
+    )).scalar_one_or_none()
 
-    if not status:
+    if not user_status:
         status = UserStatus(user_id=current_user.id, status="offline")
         db.add(status)
     else:
-        status.status = "offline"
+        user_status.status = "offline"
 
-    user = await db.execute(
+    user = (await db.execute(
         select(User).where(User.id == current_user.id)
-    )
-    refresh = user.scalar_one_or_none()
+    )).scalar_one_or_none()
 
-    if refresh:
-        refresh.refresh = None
+    if user:
+        user.refresh = None
 
     await db.commit()

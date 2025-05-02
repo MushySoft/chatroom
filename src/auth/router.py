@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, Request, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.deps import get_db
+from src.config import settings
 from src.auth import service
 from src.auth.schemas import UsernameUpdate
 from src.auth.deps import get_current_user
@@ -39,22 +40,34 @@ async def get_me(
             httponly=True,
             secure=True,
             samesite="Lax",
-            max_age=60 * 60 * 24 * 7
+            max_age=settings.TOKEN_EXPIRE_SECONDS
         )
     return await service.get_user_info(user)
 
 @router.patch("/username", summary="Update username")
 async def patch_username(
+    response: Response,
     data: UsernameUpdate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    result: tuple[User, str | None] = Depends(get_current_user)
 ):
-    return await service.update_username(data, db, current_user)
+    user, new_token = result
+    if new_token:
+        response.set_cookie(
+            key="access_token",
+            value=new_token,
+            httponly=True,
+            secure=True,
+            samesite="Lax",
+            max_age=settings.TOKEN_EXPIRE_SECONDS
+        )
+    return await service.update_username(data, db, user)
 
 
 @router.get("/logout", summary="Logout")
 async def logout(
         db: AsyncSession = Depends(get_db),
-        current_user: User = Depends(get_current_user)
+        result: tuple[User, str | None] = Depends(get_current_user)
 ):
-    return await service.logout(db, current_user)
+    user, new_token = result
+    return await service.logout(db, user)

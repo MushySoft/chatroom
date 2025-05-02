@@ -5,7 +5,9 @@ class Settings(BaseSettings):
     DATABASE_URL: str
     REDIS_URL: str
     SECRET_KEY: str
-    DEBUG: bool = False
+    DEBUG: bool
+    REDIRECT_URL: str
+    TOKEN_EXPIRE_SECONDS: int
 
     GOOGLE_CLIENT_ID: str
     GOOGLE_CLIENT_SECRET: str
