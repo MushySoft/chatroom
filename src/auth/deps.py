@@ -72,15 +72,19 @@ async def get_current_user(
 
 
 async def get_current_user_ws(
-        websocket: WebSocket,
-        db: AsyncSession = Depends(get_db)
+    websocket: WebSocket,
+    db: AsyncSession = Depends(get_db),
+    token_cookie: str | None = Cookie(default=None)
 ) -> User:
     auth_header = websocket.headers.get("authorization")
-    if not auth_header or not auth_header.startswith("Bearer "):
-        await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
-        raise AuthException("Неверный формат токена")
 
-    token = auth_header.split(" ")[1]
+    if auth_header and auth_header.startswith("Bearer "):
+        token = auth_header.split(" ")[1]
+    elif token_cookie:
+        token = token_cookie
+    else:
+        await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+        raise AuthException("Токен не найден")
 
     async with AsyncOAuth2Client(token={"access_token": token, "token_type": "Bearer"}) as client:
         try:
