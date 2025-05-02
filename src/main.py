@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.openapi.utils import get_openapi
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
 from src.config import settings
 
 app = FastAPI(
@@ -51,11 +52,16 @@ async def ping():
 
 from src.auth import router as auth_router
 from src.storage import router as storage_router
-from src.message import router as message_router
-from src.room import router as room_router
-from src.chat import router as chat_router
+from src.messages import router as messages_router
+from src.messages import ws_router as messages_ws_router
+from src.messages import ws_docs_router as messages_ws_docs_router
+from src.rooms import router as rooms_router
+from src.websocket import ws_router, ws_docs_router
 app.include_router(auth_router)
 app.include_router(storage_router)
-app.include_router(message_router)
-app.include_router(room_router)
-app.include_router(chat_router)
+app.include_router(messages_router)
+app.include_router(rooms_router)
+app.include_router(ws_router)
+app.include_router(ws_docs_router)
+app.include_router(messages_ws_router)
+app.include_router(messages_ws_docs_router)
