@@ -7,6 +7,8 @@ from src.messages.service import (
     update_message,
     delete_message,
 )
+from src.messages.ws import router as ws_router
+from src.messages.ws_docs import router as ws_docs_router
 
 __all__ = [
     "router",
@@ -17,4 +19,6 @@ __all__ = [
     "get_messages_by_room",
     "update_message",
     "delete_message",
+    "ws_router",
+    "ws_docs_router",
 ]

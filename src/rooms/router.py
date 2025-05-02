@@ -1,43 +1,64 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Response
 from redis import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.auth.deps import get_current_user
-from src.deps import get_db, get_redis
-from src.pagination import Pagination
+from src import get_redis, get_db, Pagination, settings
 from src.core.models import User
-from src.room import service
-from src.room.schemas import (
+from src.rooms import service
+from src.rooms.schemas import (
     RoomCreate, RoomInvite, RoomInviteRespond, RoomWithLastMessageOut, RoomUpdate
 )
 
 router = APIRouter(prefix="/rooms", tags=["rooms"])
 
 
-@router.post("/", summary="Create a room")
+@router.post("/", summary="Create a rooms")
 async def create_room(
         data: RoomCreate,
+        response: Response,
+        result: tuple[User, str | None] = Depends(get_current_user),
         db: AsyncSession = Depends(get_db),
-        current_user: User = Depends(get_current_user)
 ):
+    user, new_token = result
+    if new_token:
+        response.set_cookie(
+            key="access_token",
+            value=new_token,
+            httponly=True,
+            secure=True,
+            samesite="Lax",
+            max_age=settings.TOKEN_EXPIRE_SECONDS
+        )
     return await service.create_room(
         data=data,
         db=db,
-        current_user=current_user
+        current_user=user
     )
 
 
-@router.post("/invite", summary="Invite user to a room")
+@router.post("/invite", summary="Invite user to a rooms")
 async def invite_user(
         data: RoomInvite,
+        response: Response,
+        result: tuple[User, str | None] = Depends(get_current_user),
         db: AsyncSession = Depends(get_db),
-        current_user: User = Depends(get_current_user)
 ):
+    user, new_token = result
+    if new_token:
+        response.set_cookie(
+            key="access_token",
+            value=new_token,
+            httponly=True,
+            secure=True,
+            samesite="Lax",
+            max_age=settings.TOKEN_EXPIRE_SECONDS
+        )
     try:
         return await service.invite_user(
             data=data,
             db=db,
-            current_user=current_user
+            current_user=user
         )
     except PermissionError as e:
         raise HTTPException(status_code=403, detail=str(e))
@@ -45,14 +66,25 @@ async def invite_user(
 
 @router.get("/invitations/sent", summary="View sent invitations")
 async def sent_invitations(
+        response: Response,
+        result: tuple[User, str | None] = Depends(get_current_user),
         db: AsyncSession = Depends(get_db),
-        current_user: User = Depends(get_current_user),
         pagination: Pagination = Depends(Pagination),
         redis: Redis = Depends(get_redis)
 ):
+    user, new_token = result
+    if new_token:
+        response.set_cookie(
+            key="access_token",
+            value=new_token,
+            httponly=True,
+            secure=True,
+            samesite="Lax",
+            max_age=settings.TOKEN_EXPIRE_SECONDS
+        )
     return await service.get_sent_invites(
         db=db,
-        current_user=current_user,
+        current_user=user,
         pagination=pagination,
         redis=redis
     )
@@ -60,14 +92,25 @@ async def sent_invitations(
 
 @router.get("/invitations/received", summary="View received invitations")
 async def received_invitations(
+        response: Response,
+        result: tuple[User, str | None] = Depends(get_current_user),
         db: AsyncSession = Depends(get_db),
-        current_user: User = Depends(get_current_user),
         pagination: Pagination = Depends(Pagination),
         redis: Redis = Depends(get_redis)
 ):
+    user, new_token = result
+    if new_token:
+        response.set_cookie(
+            key="access_token",
+            value=new_token,
+            httponly=True,
+            secure=True,
+            samesite="Lax",
+            max_age=settings.TOKEN_EXPIRE_SECONDS
+        )
     return await service.get_received_invites(
         db=db,
-        current_user=current_user,
+        current_user=user,
         pagination=pagination,
         redis=redis
     )
@@ -76,62 +119,107 @@ async def received_invitations(
 @router.post("/invitations/respond", summary="Respond to invitation")
 async def respond_to_invite(
         data: RoomInviteRespond,
+        response: Response,
+        result: tuple[User, str | None] = Depends(get_current_user),
         db: AsyncSession = Depends(get_db),
-        current_user: User = Depends(get_current_user),
         redis: Redis = Depends(get_redis)
 ):
+    user, new_token = result
+    if new_token:
+        response.set_cookie(
+            key="access_token",
+            value=new_token,
+            httponly=True,
+            secure=True,
+            samesite="Lax",
+            max_age=settings.TOKEN_EXPIRE_SECONDS
+        )
     try:
         return await service.respond_to_invite(
             data=data,
             db=db,
-            current_user=current_user,
+            current_user=user,
             redis=redis)
     except PermissionError as e:
         raise HTTPException(status_code=403, detail=str(e))
 
 
-@router.delete("/{room_id}/users/{user_id}", summary="Remove user from room")
+@router.delete("/{room_id}/users/{user_id}", summary="Remove user from rooms")
 async def remove_user(
         room_id: int,
         user_id: int,
+        response: Response,
+        result: tuple[User, str | None] = Depends(get_current_user),
         db: AsyncSession = Depends(get_db),
-        current_user: User = Depends(get_current_user),
         redis: Redis = Depends(get_redis)
 ):
+    user, new_token = result
+    if new_token:
+        response.set_cookie(
+            key="access_token",
+            value=new_token,
+            httponly=True,
+            secure=True,
+            samesite="Lax",
+            max_age=settings.TOKEN_EXPIRE_SECONDS
+        )
     try:
         return await service.remove_user_from_room(
             room_id=room_id,
             user_id=user_id,
             db=db,
-            current_user=current_user,
+            current_user=user,
             redis=redis
         )
     except PermissionError as e:
         raise HTTPException(status_code=403, detail=str(e))
 
 
-@router.delete("/{room_id}/leave", summary="Leave room")
+@router.delete("/{room_id}/leave", summary="Leave rooms")
 async def leave_room(
         room_id: int,
+        response: Response,
+        result: tuple[User, str | None] = Depends(get_current_user),
         db: AsyncSession = Depends(get_db),
-        current_user: User = Depends(get_current_user),
         redis: Redis = Depends(get_redis)
 ):
+    user, new_token = result
+    if new_token:
+        response.set_cookie(
+            key="access_token",
+            value=new_token,
+            httponly=True,
+            secure=True,
+            samesite="Lax",
+            max_age=settings.TOKEN_EXPIRE_SECONDS
+        )
     return await service.leave_room(
         room_id=room_id,
         db=db,
-        current_user=current_user,
+        current_user=user,
         redis=redis
     )
 
 
-@router.get("/{room_id}/participants", summary="List room participants")
+@router.get("/{room_id}/participants", summary="List rooms participants")
 async def get_participants(
         room_id: int,
+        response: Response,
+        result: tuple[User, str | None] = Depends(get_current_user),
         db: AsyncSession = Depends(get_db),
         pagination: Pagination = Depends(Pagination),
         redis: Redis = Depends(get_redis)
 ):
+    user, new_token = result
+    if new_token:
+        response.set_cookie(
+            key="access_token",
+            value=new_token,
+            httponly=True,
+            secure=True,
+            samesite="Lax",
+            max_age=settings.TOKEN_EXPIRE_SECONDS
+        )
     return await service.get_room_participants(
         room_id=room_id,
         db=db,
@@ -142,29 +230,51 @@ async def get_participants(
 
 @router.get("/all", response_model=list[RoomWithLastMessageOut])
 async def get_all_rooms(
+        response: Response,
+        result: tuple[User, str | None] = Depends(get_current_user),
         db: AsyncSession = Depends(get_db),
-        current_user: User = Depends(get_current_user),
         pagination: Pagination = Depends(Pagination),
         redis: Redis = Depends(get_redis)
 ):
+    user, new_token = result
+    if new_token:
+        response.set_cookie(
+            key="access_token",
+            value=new_token,
+            httponly=True,
+            secure=True,
+            samesite="Lax",
+            max_age=settings.TOKEN_EXPIRE_SECONDS
+        )
     return await service.get_rooms(
         db=db,
-        current_user=current_user,
+        current_user=user,
         pagination=pagination,
         redis=redis,
     )
 
 
-@router.patch("/{room_id}", summary="Update room settings")
+@router.patch("/{room_id}", summary="Update rooms settings")
 async def patch_room(
         room_id: int,
         data: RoomUpdate,
+        response: Response,
+        result: tuple[User, str | None] = Depends(get_current_user),
         db: AsyncSession = Depends(get_db),
-        current_user: User = Depends(get_current_user)
 ):
+    user, new_token = result
+    if new_token:
+        response.set_cookie(
+            key="access_token",
+            value=new_token,
+            httponly=True,
+            secure=True,
+            samesite="Lax",
+            max_age=settings.TOKEN_EXPIRE_SECONDS
+        )
     return await service.update_room(
         room_id=room_id,
         data=data,
         db=db,
-        current_user=current_user
+        current_user=user
     )

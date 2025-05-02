@@ -18,7 +18,7 @@ from src.core.models import (
     Room, RoomUser, RoomInvitation, RoomInvitationStatus,
     User, Message
 )
-from src.room.schemas import (
+from src.rooms.schemas import (
     RoomCreate, RoomInvite, RoomInviteRespond, RoomUpdate
 )
 
@@ -51,7 +51,7 @@ async def invite_user(
         )
     )
     if not result.scalar_one_or_none():
-        raise PermissionError("You are not a member of this room")
+        raise PermissionError("You are not a member of this rooms")
 
     invitation = RoomInvitation(
         room_id=data.room_id,
@@ -200,7 +200,7 @@ async def remove_user_from_room(
     room = result.scalar_one_or_none()
 
     if not room or room.created_by != current_user.id:
-        raise PermissionError("Only the room owner can remove users")
+        raise PermissionError("Only the rooms owner can remove users")
 
     await db.execute(
         delete(RoomUser)
@@ -315,7 +315,7 @@ async def update_room(
         raise HTTPException(status_code=404, detail="Room not found")
 
     if room.created_by != current_user.id:
-        raise HTTPException(status_code=403, detail="You are not the owner of this room")
+        raise HTTPException(status_code=403, detail="You are not the owner of this rooms")
 
     if data.name is not None:
         room.name = data.name
