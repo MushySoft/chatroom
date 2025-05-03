@@ -1,14 +1,15 @@
+import logging
+import aiohttp
+
 from fastapi import HTTPException, Request
 from fastapi.responses import RedirectResponse, JSONResponse
 from authlib.integrations.starlette_client import OAuth
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from src.auth.schemas import UsernameUpdate
-from src.core.models import User, UserStatus
-from src.config import settings
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from src import upload_file_to_minio
-import logging
-import aiohttp
+from src.config import settings
+from src.core import User, UserStatus
 
 logger = logging.getLogger(__name__)
 
@@ -116,7 +117,8 @@ async def auth_callback(
         value=access_token,
         httponly=True,
         secure=True,
-        samesite="Lax",
+        samesite="none",
+        domain=".mushysoft.online",
         max_age=settings.TOKEN_EXPIRE_SECONDS,
     )
 

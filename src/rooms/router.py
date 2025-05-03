@@ -27,7 +27,8 @@ async def create_room(
             value=new_token,
             httponly=True,
             secure=True,
-            samesite="Lax",
+            samesite="none",
+            domain=".mushysoft.online",
             max_age=settings.TOKEN_EXPIRE_SECONDS
         )
     return await service.create_room(
@@ -51,7 +52,8 @@ async def invite_user(
             value=new_token,
             httponly=True,
             secure=True,
-            samesite="Lax",
+            samesite="none",
+            domain=".mushysoft.online",
             max_age=settings.TOKEN_EXPIRE_SECONDS
         )
     try:
@@ -79,7 +81,8 @@ async def sent_invitations(
             value=new_token,
             httponly=True,
             secure=True,
-            samesite="Lax",
+            samesite="none",
+            domain=".mushysoft.online",
             max_age=settings.TOKEN_EXPIRE_SECONDS
         )
     return await service.get_sent_invites(
@@ -105,7 +108,8 @@ async def received_invitations(
             value=new_token,
             httponly=True,
             secure=True,
-            samesite="Lax",
+            samesite="none",
+            domain=".mushysoft.online",
             max_age=settings.TOKEN_EXPIRE_SECONDS
         )
     return await service.get_received_invites(
@@ -131,7 +135,8 @@ async def respond_to_invite(
             value=new_token,
             httponly=True,
             secure=True,
-            samesite="Lax",
+            samesite="none",
+            domain=".mushysoft.online",
             max_age=settings.TOKEN_EXPIRE_SECONDS
         )
     try:
@@ -160,7 +165,8 @@ async def remove_user(
             value=new_token,
             httponly=True,
             secure=True,
-            samesite="Lax",
+            samesite="none",
+            domain=".mushysoft.online",
             max_age=settings.TOKEN_EXPIRE_SECONDS
         )
     try:
@@ -190,7 +196,8 @@ async def leave_room(
             value=new_token,
             httponly=True,
             secure=True,
-            samesite="Lax",
+            samesite="none",
+            domain=".mushysoft.online",
             max_age=settings.TOKEN_EXPIRE_SECONDS
         )
     return await service.leave_room(
@@ -217,7 +224,8 @@ async def get_participants(
             value=new_token,
             httponly=True,
             secure=True,
-            samesite="Lax",
+            samesite="none",
+            domain=".mushysoft.online",
             max_age=settings.TOKEN_EXPIRE_SECONDS
         )
     return await service.get_room_participants(
@@ -243,7 +251,8 @@ async def get_all_rooms(
             value=new_token,
             httponly=True,
             secure=True,
-            samesite="Lax",
+            samesite="none",
+            domain=".mushysoft.online",
             max_age=settings.TOKEN_EXPIRE_SECONDS
         )
     return await service.get_rooms(
@@ -269,7 +278,8 @@ async def patch_room(
             value=new_token,
             httponly=True,
             secure=True,
-            samesite="Lax",
+            samesite="none",
+            domain=".mushysoft.online",
             max_age=settings.TOKEN_EXPIRE_SECONDS
         )
     return await service.update_room(

@@ -1,6 +1,15 @@
-from sqlalchemy import Column, Integer, TIMESTAMP, Enum, Text, ForeignKey, Index
-from sqlalchemy.orm import relationship
 import datetime
+
+from sqlalchemy import (
+    Column,
+    Integer,
+    TIMESTAMP,
+    Enum,
+    Text,
+    ForeignKey,
+    Index
+)
+from sqlalchemy.orm import relationship
 
 from src import Base
 

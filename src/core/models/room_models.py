@@ -1,6 +1,16 @@
-from sqlalchemy import Column, Integer, String, TIMESTAMP, Boolean, ForeignKey, Enum, Index
-from sqlalchemy.orm import relationship
 import datetime
+
+from sqlalchemy import (
+    Column,
+    Integer,
+    String,
+    TIMESTAMP,
+    Boolean,
+    ForeignKey,
+    Enum,
+    Index
+)
+from sqlalchemy.orm import relationship
 
 from src import Base
 

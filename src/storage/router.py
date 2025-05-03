@@ -21,7 +21,8 @@ async def upload_file(
             value=new_token,
             httponly=True,
             secure=True,
-            samesite="Lax",
+            samesite="none",
+            domain=".mushysoft.online",
             max_age=settings.TOKEN_EXPIRE_SECONDS
         )
     return await service.upload_file(

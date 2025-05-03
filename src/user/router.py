@@ -24,7 +24,8 @@ async def get_me(
             value=new_token,
             httponly=True,
             secure=True,
-            samesite="Lax",
+            samesite="none",
+            domain=".mushysoft.online",
             max_age=settings.TOKEN_EXPIRE_SECONDS
         )
     return await service.get_user_info(user)
@@ -43,7 +44,8 @@ async def patch_username(
             value=new_token,
             httponly=True,
             secure=True,
-            samesite="Lax",
+            samesite="none",
+            domain=".mushysoft.online",
             max_age=settings.TOKEN_EXPIRE_SECONDS
         )
     return await service.update_username(data, db, user)

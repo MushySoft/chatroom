@@ -27,7 +27,8 @@ async def send_message(
             value=new_token,
             httponly=True,
             secure=True,
-            samesite="Lax",
+            samesite="none",
+            domain=".mushysoft.online",
             max_age=settings.TOKEN_EXPIRE_SECONDS
         )
     return await service.send_message(
@@ -53,7 +54,8 @@ async def get_messages_by_room(
             value=new_token,
             httponly=True,
             secure=True,
-            samesite="Lax",
+            samesite="none",
+            domain=".mushysoft.online",
             max_age=settings.TOKEN_EXPIRE_SECONDS
         )
     return await service.get_messages_by_room(
@@ -78,7 +80,8 @@ async def get_message_by_id(
             value=new_token,
             httponly=True,
             secure=True,
-            samesite="Lax",
+            samesite="none",
+            domain=".mushysoft.online",
             max_age=settings.TOKEN_EXPIRE_SECONDS
         )
     message = await service.get_message_by_id(
@@ -105,7 +108,8 @@ async def update_message(
             value=new_token,
             httponly=True,
             secure=True,
-            samesite="Lax",
+            samesite="none",
+            domain=".mushysoft.online",
             max_age=settings.TOKEN_EXPIRE_SECONDS
         )
     try:
@@ -134,7 +138,8 @@ async def delete_message(
             value=new_token,
             httponly=True,
             secure=True,
-            samesite="Lax",
+            samesite="none",
+            domain=".mushysoft.online",
             max_age=settings.TOKEN_EXPIRE_SECONDS
         )
     return await service.delete_message(

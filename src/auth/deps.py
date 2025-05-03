@@ -1,11 +1,19 @@
-from fastapi import Depends, Header, WebSocket, status, HTTPException, Cookie
-from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import (
+    Depends,
+    Header,
+    WebSocket,
+    status,
+    Cookie
+)
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 from authlib.integrations.httpx_client import AsyncOAuth2Client
-from src.deps import get_db
-from src.core.models import User
-from src.auth.exceptions import AuthException
 from typing import Tuple, Optional
+
+from src.deps import get_db
+from src.core import User
+
+from src.auth.exceptions import AuthException
 
 
 async def get_current_user(
