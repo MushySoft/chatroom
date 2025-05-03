@@ -1,6 +1,5 @@
-from src.user.models import User, UserStatus
+from src.user.router import router
 
 __all__ = [
-    "User",
-    "UserStatus",
+    "router",
 ]

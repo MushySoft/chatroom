@@ -57,6 +57,7 @@ from src.messages import ws_router as messages_ws_router
 from src.messages import ws_docs_router as messages_ws_docs_router
 from src.rooms import router as rooms_router
 from src.websocket import ws_router, ws_docs_router
+from src.user import router as user_router
 app.include_router(auth_router)
 app.include_router(storage_router)
 app.include_router(messages_router)
@@ -65,3 +66,4 @@ app.include_router(ws_router)
 app.include_router(ws_docs_router)
 app.include_router(messages_ws_router)
 app.include_router(messages_ws_docs_router)
+app.include_router(user_router)
