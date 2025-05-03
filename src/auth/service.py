@@ -123,29 +123,6 @@ async def auth_callback(
     return response
 
 
-async def get_user_info(current_user: User):
-    return {
-        "id": current_user.id,
-        "username": current_user.username,
-        "email": current_user.email,
-        "avatar_url": current_user.avatar_url,
-    }
-
-async def update_username(
-        data: UsernameUpdate,
-        db: AsyncSession,
-        current_user: User
-):
-    result = await db.execute(select(User).where(User.username == data.username))
-    existing_user = result.scalar_one_or_none()
-    if existing_user and existing_user.id != current_user.id:
-        raise HTTPException(status_code=409, detail="Username is already taken")
-
-    current_user.username = data.username
-    await db.commit()
-    return {"status": "ok", "new_username": data.username}
-
-
 async def logout(
         db: AsyncSession,
         current_user: User

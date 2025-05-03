@@ -27,43 +27,6 @@ async def auth_callback(
     )
 
 
-@router.get("/me", summary="Get current user")
-async def get_me(
-    response: Response,
-    result: tuple[User, str | None] = Depends(get_current_user)
-):
-    user, new_token = result
-    if new_token:
-        response.set_cookie(
-            key="access_token",
-            value=new_token,
-            httponly=True,
-            secure=True,
-            samesite="Lax",
-            max_age=settings.TOKEN_EXPIRE_SECONDS
-        )
-    return await service.get_user_info(user)
-
-@router.patch("/username", summary="Update username")
-async def patch_username(
-    response: Response,
-    data: UsernameUpdate,
-    db: AsyncSession = Depends(get_db),
-    result: tuple[User, str | None] = Depends(get_current_user)
-):
-    user, new_token = result
-    if new_token:
-        response.set_cookie(
-            key="access_token",
-            value=new_token,
-            httponly=True,
-            secure=True,
-            samesite="Lax",
-            max_age=settings.TOKEN_EXPIRE_SECONDS
-        )
-    return await service.update_username(data, db, user)
-
-
 @router.get("/logout", summary="Logout")
 async def logout(
         db: AsyncSession = Depends(get_db),
