@@ -45,8 +45,8 @@ async def get_user_by_id(
 
 
 async def search_users(
-    username: Optional[str],
-    email: Optional[str],
+    username: str | None,
+    email: str | None,
     db: AsyncSession,
 ):
     query = select(User).options(joinedload(User.status))
