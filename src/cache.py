@@ -69,7 +69,11 @@ async def get_cached_participants(redis: Redis, room_id: int):
 
 async def set_cached_participants(redis: Redis, room_id: int, data: list):
     key = TEMP_PARTICIPANTS_KEY.format(room_id=room_id)
-    await redis.setex(key, timedelta(seconds=30), json.dumps(data, default=serialize_datetime))
+    await redis.setex(
+        key,
+        timedelta(seconds=30),
+        json.dumps(data, default=serialize_datetime)
+    )
 
 
 async def delete_cached_participants(redis: Redis, room_id: int):
@@ -77,15 +81,21 @@ async def delete_cached_participants(redis: Redis, room_id: int):
 
 
 async def get_cached_invites(redis: Redis, user_id: int, sent: bool, limit: int, offset: int):
-    key = TEMP_INVITES_KEY.format(user_id=user_id, limit=limit, offset=offset)
+    prefix = "sent" if sent else "received"
+    key = TEMP_INVITES_KEY.format(user_id=user_id, prefix=prefix, limit=limit, offset=offset)
     data = await redis.get(key)
     if data:
         return json.loads(data)
 
 
 async def set_cached_invites(redis: Redis, user_id: int, sent: bool, limit: int, offset: int, data: list):
-    key = TEMP_INVITES_KEY.format(user_id=user_id, limit=limit, offset=offset)
-    await redis.setex(key, timedelta(seconds=30), json.dumps(data, default=serialize_datetime))
+    prefix = "sent" if sent else "received"
+    key = TEMP_INVITES_KEY.format(user_id=user_id, prefix=prefix, limit=limit, offset=offset)
+    await redis.setex(
+        key,
+        timedelta(seconds=30),
+        json.dumps(data, default=serialize_datetime)
+    )
 
 
 async def delete_all_invite_caches(redis: Redis, user_id: int):

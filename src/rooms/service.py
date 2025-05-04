@@ -77,12 +77,13 @@ async def get_sent_invites(
         pagination: Pagination,
         redis: Redis
 ):
-    cached = await get_cached_invites(redis,
-                                      current_user.id,
-                                      sent=True,
-                                      limit=pagination.limit,
-                                      offset=pagination.offset
-                                      )
+    cached = await get_cached_invites(
+        redis,
+        current_user.id,
+        sent=True,
+        limit=pagination.limit,
+        offset=pagination.offset
+    )
     if cached:
         return cached
 
@@ -104,12 +105,13 @@ async def get_sent_invites(
             "created_at": i.created_at
         } for i in invites
     ]
-    await set_cached_invites(redis,
-                             current_user.id,
-                             sent=True,
-                             limit=pagination.limit,
-                             offset=pagination.offset,
-                             data=data)
+    await set_cached_invites(
+        redis,
+        current_user.id,
+        sent=True,
+        limit=pagination.limit,
+        offset=pagination.offset,
+        data=data)
     return data
 
 
@@ -119,12 +121,13 @@ async def get_received_invites(
         pagination: Pagination,
         redis: Redis
 ):
-    cached = await get_cached_invites(redis,
-                                      current_user.id,
-                                      sent=False,
-                                      limit=pagination.limit,
-                                      offset=pagination.offset
-                                      )
+    cached = await get_cached_invites(
+        redis,
+        current_user.id,
+        sent=False,
+        limit=pagination.limit,
+        offset=pagination.offset
+    )
     if cached:
         return cached
 
@@ -146,12 +149,13 @@ async def get_received_invites(
             "created_at": i.created_at
         } for i in invites
     ]
-    await set_cached_invites(redis,
-                             current_user.id,
-                             sent=True,
-                             limit=pagination.limit,
-                             offset=pagination.offset,
-                             data=data)
+    await set_cached_invites(
+        redis,
+        current_user.id,
+        sent=False,
+        limit=pagination.limit,
+        offset=pagination.offset,
+        data=data)
     return data
 
 
