@@ -152,7 +152,8 @@ class RoomInvitation(Base):
         "RoomInvitationStatus",
         back_populates="invitation",
         uselist=False,
-        cascade="all, delete-orphan"
+        cascade="all, delete-orphan",
+        lazy="selectin"
     )
 
     __table_args__ = (
