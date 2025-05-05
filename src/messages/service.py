@@ -1,19 +1,19 @@
 import datetime
+from typing import List, Optional
 
 from redis.asyncio import Redis
+from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, delete, update
 from sqlalchemy.orm import selectinload
 
-from src import get_temp_files, clear_temp_files, Pagination
-from src.core import User, Message, FileStorage, MessageStatus, RoomUser
-
-from src.messages.schemas import MessageCreate, MessageUpdate
+from src import Pagination, clear_temp_files, get_temp_files
+from src.core import FileStorage, Message, MessageStatus, RoomUser, User
+from src.messages.schemas import MessageCreate, MessageDTO, MessageUpdate
 
 
 async def send_message(
     data: MessageCreate, db: AsyncSession, redis: Redis, current_user: User
-):
+) -> dict[str, int]:
     new_msg = Message(
         room_id=data.room_id,
         sender_id=current_user.id,
@@ -50,7 +50,9 @@ async def send_message(
     return {"message_id": new_msg.id}
 
 
-async def get_message_by_id(message_id: int, db: AsyncSession, current_user: User):
+async def get_message_by_id(
+    message_id: int, db: AsyncSession, current_user: User
+) -> Optional[MessageDTO]:
     result = await db.execute(
         select(Message)
         .options(selectinload(Message.files))
@@ -75,7 +77,16 @@ async def get_message_by_id(message_id: int, db: AsyncSession, current_user: Use
         .values(status="viewed", updated_at=datetime.datetime.now())
     )
     await db.commit()
-    return message
+
+    return MessageDTO(
+        id=message.id,
+        room_id=message.room_id,
+        sender_id=message.sender_id,
+        content=message.content,
+        created_at=message.created_at,
+        updated_at=message.updated_at,
+        files=[f.file_url for f in message.files],
+    )
 
 
 async def get_messages_by_room(
@@ -83,7 +94,7 @@ async def get_messages_by_room(
     db: AsyncSession,
     current_user: User,
     pagination: Pagination,
-):
+) -> List[MessageDTO]:
     result = await db.execute(
         select(Message)
         .options(selectinload(Message.files))
@@ -109,10 +120,23 @@ async def get_messages_by_room(
     )
     await db.commit()
 
-    return messages
+    return [
+        MessageDTO(
+            id=msg.id,
+            room_id=msg.room_id,
+            sender_id=msg.sender_id,
+            content=msg.content,
+            created_at=msg.created_at,
+            updated_at=msg.updated_at,
+            files=[f.file_url for f in msg.files],
+        )
+        for msg in messages
+    ]
 
 
-async def update_message(data: MessageUpdate, db: AsyncSession, current_user: User):
+async def update_message(
+    data: MessageUpdate, db: AsyncSession, current_user: User
+) -> dict[str, str]:
     result = await db.execute(
         select(Message)
         .where(Message.id == data.message_id)
@@ -148,10 +172,12 @@ async def update_message(data: MessageUpdate, db: AsyncSession, current_user: Us
 
     await db.commit()
 
-    return {"message_id": message.id, "status": "updated"}
+    return {"message_id": str(message.id), "status": "updated"}
 
 
-async def delete_message(message_id: int, db: AsyncSession, current_user: User):
+async def delete_message(
+    message_id: int, db: AsyncSession, current_user: User
+) -> dict[str, str]:
     await db.execute(
         update(MessageStatus)
         .where(
@@ -161,4 +187,4 @@ async def delete_message(message_id: int, db: AsyncSession, current_user: User):
         .values(status="deleted", updated_at=datetime.datetime.now())
     )
     await db.commit()
-    return {"message_id": message_id, "status": "deleted"}
+    return {"message_id": str(message_id), "status": "deleted"}

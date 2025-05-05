@@ -1,26 +1,34 @@
 import datetime
+from typing import Any
 
-from sqlalchemy import select, delete, update
-from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import HTTPException
-from redis import Redis
+from redis.asyncio import Redis
+from sqlalchemy import delete, select, update
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from src import Pagination
 from src.cache import (
-    get_cached_rooms,
-    set_cached_rooms,
-    get_cached_participants,
-    set_cached_participants,
     delete_cached_participants,
     get_cached_invites,
+    get_cached_participants,
+    get_cached_rooms,
     set_cached_invites,
+    set_cached_participants,
+    set_cached_rooms,
 )
-from src.core import Room, RoomUser, RoomInvitation, RoomInvitationStatus, User, Message
+from src.core import Message, Room, RoomInvitation, RoomInvitationStatus, RoomUser, User
+from src.rooms.schemas import (
+    RoomCreate,
+    RoomInvitationOut,
+    RoomInvite,
+    RoomInviteRespond,
+    RoomParticipantOut,
+    RoomUpdate,
+    RoomWithLastMessageOut,
+)
 
-from src.rooms.schemas import RoomCreate, RoomInvite, RoomInviteRespond, RoomUpdate
 
-
-async def create_room(data: RoomCreate, db: AsyncSession, current_user: User):
+async def create_room(data: RoomCreate, db: AsyncSession, current_user: User) -> Room:
     new_room = Room(
         name=data.name,
         is_private=data.is_private,
@@ -42,7 +50,9 @@ async def create_room(data: RoomCreate, db: AsyncSession, current_user: User):
     return new_room
 
 
-async def invite_user(data: RoomInvite, db: AsyncSession, current_user: User):
+async def invite_user(
+    data: RoomInvite, db: AsyncSession, current_user: User
+) -> dict[str, Any]:
     result = await db.execute(
         select(RoomUser).where(
             RoomUser.room_id == data.room_id, RoomUser.user_id == current_user.id
@@ -73,7 +83,7 @@ async def invite_user(data: RoomInvite, db: AsyncSession, current_user: User):
 
 async def get_sent_invites(
     db: AsyncSession, current_user: User, pagination: Pagination, redis: Redis
-):
+) -> list[RoomInvitationOut | None] | list[dict[str, Any]]:
     cached = await get_cached_invites(
         redis,
         current_user.id,
@@ -116,7 +126,7 @@ async def get_sent_invites(
 
 async def get_received_invites(
     db: AsyncSession, current_user: User, pagination: Pagination, redis: Redis
-):
+) -> list[RoomInvitationOut | None] | list[dict[str, Any]]:
     cached = await get_cached_invites(
         redis,
         current_user.id,
@@ -159,7 +169,7 @@ async def get_received_invites(
 
 async def respond_to_invite(
     data: RoomInviteRespond, db: AsyncSession, current_user: User, redis: Redis
-):
+) -> dict[str, str]:
     result = await db.execute(
         select(RoomInvitation).where(RoomInvitation.id == data.invitation_id)
     )
@@ -191,7 +201,7 @@ async def respond_to_invite(
 
 async def remove_user_from_room(
     room_id: int, user_id: int, db: AsyncSession, current_user: User, redis: Redis
-):
+) -> dict[str, str]:
     result = await db.execute(select(Room).where(Room.id == room_id))
     room = result.scalar_one_or_none()
 
@@ -206,7 +216,9 @@ async def remove_user_from_room(
     return {"status": "removed"}
 
 
-async def leave_room(room_id: int, db: AsyncSession, current_user: User, redis: Redis):
+async def leave_room(
+    room_id: int, db: AsyncSession, current_user: User, redis: Redis
+) -> dict[str, str]:
     await db.execute(
         delete(RoomUser).where(
             RoomUser.room_id == room_id, RoomUser.user_id == current_user.id
@@ -219,7 +231,7 @@ async def leave_room(room_id: int, db: AsyncSession, current_user: User, redis: 
 
 async def get_room_participants(
     room_id: int, db: AsyncSession, pagination: Pagination, redis: Redis
-):
+) -> list[RoomParticipantOut | None] | list[dict[str, Any]]:
     cached = await get_cached_participants(redis, room_id)
     if cached:
         return cached
@@ -245,7 +257,7 @@ async def get_rooms(
     redis: Redis,
     current_user: User,
     pagination: Pagination,
-):
+) -> list[RoomWithLastMessageOut | None] | list[dict[str, Any]]:
     cached = await get_cached_rooms(
         redis, current_user.id, pagination.limit, pagination.offset
     )
@@ -299,7 +311,7 @@ async def get_rooms(
 
 async def update_room(
     room_id: int, data: RoomUpdate, db: AsyncSession, current_user: User
-):
+) -> dict[str, str]:
     result = await db.execute(select(Room).where(Room.id == room_id))
     room = result.scalar_one_or_none()
 
@@ -326,4 +338,4 @@ async def get_room_user_ids(room_id: int, db: AsyncSession) -> list[int]:
     result = await db.execute(
         select(RoomUser.user_id).where(RoomUser.room_id == room_id)
     )
-    return result.scalars().all()
+    return list(result.scalars().all())
