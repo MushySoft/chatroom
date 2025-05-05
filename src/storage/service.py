@@ -2,7 +2,7 @@ from redis.asyncio import Redis
 from fastapi import UploadFile
 
 from src import add_file_to_temp_redis, upload_file_to_minio
-from src.core.models import User
+from src.core import User
 
 
 async def upload_file(

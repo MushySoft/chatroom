@@ -1,7 +1,9 @@
-from datetime import datetime
+import datetime
+
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from src.core.models import UserStatus
+
+from src.core import UserStatus
 
 async def set_user_active(user_id: int, db: AsyncSession):
     status = (await db.execute(
@@ -23,5 +25,5 @@ async def set_user_offline(user_id: int, db: AsyncSession):
 
     if status:
         status.status = "offline"
-        status.last_seen = datetime.now()
+        status.last_seen = datetime.datetime.now()
         await db.commit()

@@ -1,7 +1,8 @@
 import io
 from minio import Minio
-from src.config import settings
 from uuid import uuid4
+
+from src.config import settings
 
 client = Minio(
     settings.MINIO_ENDPOINT,

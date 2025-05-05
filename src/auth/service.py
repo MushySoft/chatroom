@@ -7,8 +7,7 @@ from authlib.integrations.starlette_client import OAuth
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src import upload_file_to_minio
-from src.config import settings
+from src import upload_file_to_minio, settings
 from src.core import User, UserStatus
 
 logger = logging.getLogger(__name__)

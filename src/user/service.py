@@ -2,9 +2,10 @@ from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 from sqlalchemy import select
-from typing import Optional
-from src.auth.schemas import UsernameUpdate
-from src.core.models import User
+
+from src.core import User
+
+from src.user.schemas import UsernameUpdate
 
 
 async def get_user_info(current_user: User):
@@ -32,8 +33,8 @@ async def update_username(
 
 
 async def get_user_by_id(
-    user_id: int,
-    db: AsyncSession,
+        user_id: int,
+        db: AsyncSession,
 ):
     result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
@@ -45,9 +46,9 @@ async def get_user_by_id(
 
 
 async def search_users(
-    username: str | None,
-    email: str | None,
-    db: AsyncSession,
+        username: str | None,
+        email: str | None,
+        db: AsyncSession,
 ):
     query = select(User).options(joinedload(User.status))
 

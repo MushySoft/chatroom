@@ -1,13 +1,18 @@
-from fastapi import APIRouter, Depends, HTTPException, Response
 from redis import Redis
+from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.auth.deps import get_current_user
 from src import get_redis, get_db, Pagination, settings
-from src.core.models import User
+from src.auth import get_current_user
+from src.core import User
+
 from src.rooms import service
 from src.rooms.schemas import (
-    RoomCreate, RoomInvite, RoomInviteRespond, RoomWithLastMessageOut, RoomUpdate
+    RoomCreate,
+    RoomInvite,
+    RoomInviteRespond,
+    RoomWithLastMessageOut,
+    RoomUpdate
 )
 
 router = APIRouter(prefix="/rooms", tags=["rooms"])

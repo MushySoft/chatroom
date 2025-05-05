@@ -3,9 +3,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from redis.asyncio import Redis
 
-from src.deps import get_db, get_redis
+from src import get_db, get_redis
 from src.auth import get_current_user_ws
-from src.core.models import User, Room, RoomUser, Message
+from src.core import User, Room, RoomUser, Message
+
 from src.websocket.manager import manager
 from src.websocket.service import set_user_active, set_user_offline
 

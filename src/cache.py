@@ -1,7 +1,8 @@
+import json
+import datetime
+
 from redis import asyncio
 from redis.asyncio import Redis
-import json
-from datetime import datetime, timedelta
 
 from src.config import settings
 from src.constants import (
@@ -21,7 +22,7 @@ async def add_file_to_temp_redis(redis: Redis, user_id: int, file_url: str):
 
     files.append({
         "url": file_url,
-        "uploaded_at": datetime.now().isoformat()
+        "uploaded_at": datetime.datetime.now().isoformat()
     })
 
     await redis.set(key, json.dumps(files), ex=3600)
@@ -55,7 +56,7 @@ async def set_cached_rooms(redis: Redis, user_id: int, limit: int, offset: int, 
     key = TEMP_ROOMS_KEY.format(user_id=user_id, limit=limit, offset=offset)
     await redis.setex(
         key,
-        timedelta(seconds=15),
+        datetime.timedelta(seconds=15),
         json.dumps(data, default=serialize_datetime)
     )
 
@@ -71,7 +72,7 @@ async def set_cached_participants(redis: Redis, room_id: int, data: list):
     key = TEMP_PARTICIPANTS_KEY.format(room_id=room_id)
     await redis.setex(
         key,
-        timedelta(seconds=30),
+        datetime.timedelta(seconds=30),
         json.dumps(data, default=serialize_datetime)
     )
 
@@ -93,12 +94,12 @@ async def set_cached_invites(redis: Redis, user_id: int, sent: bool, limit: int,
     key = TEMP_INVITES_KEY.format(user_id=user_id, prefix=prefix, limit=limit, offset=offset)
     await redis.setex(
         key,
-        timedelta(seconds=30),
+        datetime.timedelta(seconds=30),
         json.dumps(data, default=serialize_datetime)
     )
 
 
-async def delete_all_invite_caches(redis: Redis, user_id: int):
-    # Можно сделать через SCAN и DEL по шаблону user:{user_id}:*invites*
-    # или просто удалить конкретные ключи, если нужно сразу
-    pass  # опционально
+# async def delete_all_invite_caches(redis: Redis, user_id: int):
+#     # Можно сделать через SCAN и DEL по шаблону user:{user_id}:*invites*
+#     # или просто удалить конкретные ключи, если нужно сразу
+#     pass  # опционально

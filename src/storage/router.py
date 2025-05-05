@@ -1,8 +1,10 @@
 from fastapi import APIRouter, UploadFile, File, Depends, Response
-from src.auth.deps import get_current_user
+
 from src import get_redis, settings
+from src.auth import get_current_user
+from src.core import User
+
 from src.storage import service
-from src.core.models import User
 
 router = APIRouter(prefix="/files", tags=["files"])
 

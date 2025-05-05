@@ -1,11 +1,12 @@
+import datetime
+
 from redis.asyncio import Redis
-from datetime import datetime
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, delete, update
 from sqlalchemy.orm import selectinload
 
 from src import get_temp_files, clear_temp_files, Pagination
-from src.core.models import User, Message, FileStorage, MessageStatus, RoomUser
+from src.core import User, Message, FileStorage, MessageStatus, RoomUser
 
 from src.messages.schemas import MessageCreate, MessageUpdate
 
@@ -20,8 +21,8 @@ async def send_message(
         room_id=data.room_id,
         sender_id=current_user.id,
         content=data.content,
-        created_at=datetime.now(),
-        updated_at=datetime.now()
+        created_at=datetime.datetime.now(),
+        updated_at=datetime.datetime.now()
     )
     db.add(new_msg)
     await db.flush()
@@ -38,7 +39,7 @@ async def send_message(
             message_id=new_msg.id,
             user_id=user_id,
             status=status_value,
-            updated_at=datetime.now()
+            updated_at=datetime.datetime.now()
         ))
 
     files = await get_temp_files(redis, current_user.id)
@@ -77,7 +78,7 @@ async def get_message_by_id(
             MessageStatus.message_id == message.id,
             MessageStatus.user_id == current_user.id
         )
-        .values(status="viewed", updated_at=datetime.now())
+        .values(status="viewed", updated_at=datetime.datetime.now())
     )
     await db.commit()
     return message
@@ -110,7 +111,7 @@ async def get_messages_by_room(
             MessageStatus.message_id.in_([m.id for m in messages]),
             MessageStatus.user_id == current_user.id
         )
-        .values(status="viewed", updated_at=datetime.now())
+        .values(status="viewed", updated_at=datetime.datetime.now())
     )
     await db.commit()
 
@@ -138,7 +139,7 @@ async def update_message(
     if data.new_content is not None:
         message.content = data.new_content
 
-    message.updated_at = datetime.now()
+    message.updated_at = datetime.datetime.now()
 
     await db.execute(
         delete(FileStorage).where(FileStorage.message_id == message.id)
@@ -154,7 +155,7 @@ async def update_message(
             MessageStatus.user_id != current_user.id,
             MessageStatus.status != "deleted"
         )
-        .values(status="delivered", updated_at=datetime.now())
+        .values(status="delivered", updated_at=datetime.datetime.now())
     )
 
     await db.commit()
@@ -173,7 +174,7 @@ async def delete_message(
             MessageStatus.message_id == message_id,
             MessageStatus.user_id == current_user.id
         )
-        .values(status="deleted", updated_at=datetime.now())
+        .values(status="deleted", updated_at=datetime.datetime.now())
     )
     await db.commit()
     return {"message_id": message_id, "status": "deleted"}

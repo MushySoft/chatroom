@@ -2,10 +2,11 @@ from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from redis.asyncio import Redis
 
-from src.deps import get_db, get_redis
+from src import get_db, get_redis
 from src.auth import get_current_user_ws
-from src.core.models import User
+from src.core import User
 from src.rooms.service import get_room_user_ids
+
 from src.messages.service import (
     send_message,
     get_messages_by_room,

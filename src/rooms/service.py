@@ -1,6 +1,7 @@
+import datetime
+
 from sqlalchemy import select, delete, update
 from sqlalchemy.ext.asyncio import AsyncSession
-from datetime import datetime
 from fastapi import HTTPException
 from redis import Redis
 
@@ -14,10 +15,11 @@ from src.cache import (
     get_cached_invites,
     set_cached_invites,
 )
-from src.core.models import (
+from src.core import (
     Room, RoomUser, RoomInvitation, RoomInvitationStatus,
     User, Message
 )
+
 from src.rooms.schemas import (
     RoomCreate, RoomInvite, RoomInviteRespond, RoomUpdate
 )
@@ -28,13 +30,17 @@ async def create_room(data: RoomCreate, db: AsyncSession, current_user: User):
         name=data.name,
         is_private=data.is_private,
         created_by=current_user.id,
-        created_at=datetime.now(),
-        updated_at=datetime.now()
+        created_at=datetime.datetime.now(),
+        updated_at=datetime.datetime.now()
     )
     db.add(new_room)
     await db.flush()
 
-    db.add(RoomUser(room_id=new_room.id, user_id=current_user.id, joined_at=datetime.now()))
+    db.add(RoomUser(
+        room_id=new_room.id,
+        user_id=current_user.id,
+        joined_at=datetime.datetime.now()
+    ))
     await db.commit()
     return new_room
 
@@ -57,7 +63,7 @@ async def invite_user(
         room_id=data.room_id,
         sender_id=current_user.id,
         receiver_id=data.receiver_id,
-        created_at=datetime.now()
+        created_at=datetime.datetime.now()
     )
     db.add(invitation)
     await db.flush()
@@ -65,7 +71,7 @@ async def invite_user(
     db.add(RoomInvitationStatus(
         invitation_id=invitation.id,
         status="pending",
-        updated_at=datetime.now()
+        updated_at=datetime.datetime.now()
     ))
     await db.commit()
     return {"invitation_id": invitation.id, "status": "pending"}
@@ -178,14 +184,14 @@ async def respond_to_invite(
     await db.execute(
         update(RoomInvitationStatus)
         .where(RoomInvitationStatus.invitation_id == invitation.id)
-        .values(status=status, updated_at=datetime.now())
+        .values(status=status, updated_at=datetime.datetime.now())
     )
 
     if data.accept:
         db.add(RoomUser(
             room_id=invitation.room_id,
             user_id=current_user.id,
-            joined_at=datetime.now()
+            joined_at=datetime.datetime.now()
         ))
         await delete_cached_participants(redis, invitation.room_id)
 
@@ -327,7 +333,7 @@ async def update_room(
     if data.is_private is not None:
         room.is_private = data.is_private
 
-    room.updated_at = datetime.now()
+    room.updated_at = datetime.datetime.now()
     await db.commit()
     return {"status": "updated"}
 
