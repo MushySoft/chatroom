@@ -6,7 +6,7 @@ router = APIRouter(tags=["WebSocket Docs"], prefix="/docs/ws/chat")
 @router.get(
     "", summary="WebSocket Chat API", description="Description WebSocket API for chat"
 )
-def ws_chat_docs():
+def ws_chat_docs():  # type: ignore[no-untyped-def]
     return {
         "endpoint": "ws://your-domain/ws/chat/{room_id}",
         "description": "WebSocket connection to chat rooms",

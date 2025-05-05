@@ -4,7 +4,7 @@ router = APIRouter(prefix="/docs/ws", tags=["WebSocket Docs"])
 
 
 @router.get("", summary="Global WebSocket API", description="Global Websocket `/ws`")
-def websocket_global_docs():
+def websocket_global_docs():  # type: ignore[no-untyped-def]
     return {
         "endpoint": "ws://your-domain/ws",
         "description": "Global WebSocket (online, preview, invites, etc.)",
