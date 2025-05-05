@@ -1,13 +1,13 @@
 import logging
-import aiohttp
 
-from fastapi import HTTPException, Request
-from fastapi.responses import RedirectResponse, JSONResponse
+import aiohttp
 from authlib.integrations.starlette_client import OAuth
+from fastapi import HTTPException, Request
+from fastapi.responses import JSONResponse, RedirectResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src import upload_file_to_minio, settings
+from src import settings, upload_file_to_minio
 from src.core import User, UserStatus
 
 logger = logging.getLogger(__name__)
@@ -22,7 +22,7 @@ oauth.register(
 )
 
 
-async def login(request: Request):
+async def login(request: Request):  # type: ignore[no-untyped-def]
     if settings.DEBUG:
         redirect_uri = str(request.url_for("auth_callback"))
     else:
@@ -35,7 +35,9 @@ async def login(request: Request):
     return response
 
 
-async def auth_callback(request: Request, db: AsyncSession):
+async def auth_callback(  # type: ignore[no-untyped-def]
+    request: Request, db: AsyncSession
+):
     token = await oauth.google.authorize_access_token(request)
     logger.info(token)
 
@@ -53,9 +55,9 @@ async def auth_callback(request: Request, db: AsyncSession):
     if avatar_url:
         try:
             async with aiohttp.ClientSession() as session:
-                async with session.get(avatar_url) as response:
-                    if response.status == 200:
-                        content = await response.read()
+                async with session.get(avatar_url) as avatar_upload:
+                    if avatar_upload.status == 200:
+                        content = await avatar_upload.read()
                         filename = f"avatars/{user_info['sub']}.jpg"
                         avatar_minio_url = upload_file_to_minio(
                             content, filename, "image/jpeg"
@@ -63,8 +65,8 @@ async def auth_callback(request: Request, db: AsyncSession):
         except Exception as e:
             logger.warning(f"Ошибка при загрузке аватарки: {e}")
 
-    user = await db.execute(select(User).where(User.email == user_info["email"]))
-    user = user.scalar_one_or_none()
+    user_result = await db.execute(select(User).where(User.email == user_info["email"]))
+    user: User | None = user_result.scalar_one_or_none()
 
     if not user:
         user = User(
@@ -83,8 +85,10 @@ async def auth_callback(request: Request, db: AsyncSession):
             user.refresh_token = refresh_token
         await db.commit()
 
-    status = await db.execute(select(UserStatus).where(UserStatus.user_id == user.id))
-    status = status.scalar_one_or_none()
+    user_status_result = await db.execute(
+        select(UserStatus).where(UserStatus.user_id == user.id)
+    )
+    status: UserStatus | None = user_status_result.scalar_one_or_none()
 
     if not status:
         status = UserStatus(user_id=user.id, status="active")
@@ -106,7 +110,7 @@ async def auth_callback(request: Request, db: AsyncSession):
             }
         )
 
-    response = RedirectResponse(settings.REDIRECT_URL)
+    response: RedirectResponse = RedirectResponse(settings.REDIRECT_URL)
     response.set_cookie(
         key="access_token",
         value=access_token,
@@ -120,7 +124,7 @@ async def auth_callback(request: Request, db: AsyncSession):
     return response
 
 
-async def logout(db: AsyncSession, current_user: User):
+async def logout(db: AsyncSession, current_user: User) -> None:
     user_status = (
         await db.execute(
             select(UserStatus).where(UserStatus.user_id == current_user.id)
@@ -138,6 +142,6 @@ async def logout(db: AsyncSession, current_user: User):
     ).scalar_one_or_none()
 
     if user:
-        user.refresh = None
+        user.refresh_token = ""
 
     await db.commit()

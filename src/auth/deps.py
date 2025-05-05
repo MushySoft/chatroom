@@ -1,13 +1,13 @@
-from fastapi import Depends, Header, WebSocket, status, Cookie
+from typing import Optional, Tuple
+
+from authlib.integrations.httpx_client import AsyncOAuth2Client
+from fastapi import Cookie, Depends, Header, WebSocket, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from authlib.integrations.httpx_client import AsyncOAuth2Client
-from typing import Tuple, Optional
-
-from src.deps import get_db
-from src.core import User
 
 from src.auth.exceptions import AuthException
+from src.core import User
+from src.deps import get_db
 
 
 async def get_current_user(
