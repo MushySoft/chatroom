@@ -1,9 +1,10 @@
-from pydantic import BaseModel, constr
-from typing import Optional
+from typing import Annotated, Optional
+
+from pydantic import BaseModel, Field
 
 
 class UsernameUpdate(BaseModel):
-    username: constr(min_length=3, max_length=16)
+    username: Annotated[str, Field(min_length=3, max_length=16)]
 
 
 class UserPublic(BaseModel):

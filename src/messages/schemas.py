@@ -1,14 +1,25 @@
-from pydantic import BaseModel
-from typing import Optional, List
+from datetime import datetime
+from typing import List, Optional
+
+from pydantic import BaseModel, Field
 
 
 class MessageCreate(BaseModel):
     room_id: int
-    content: Optional[str] = None
-    file_urls: List[str] = []
+    content: str
 
 
 class MessageUpdate(BaseModel):
     message_id: int
     new_content: Optional[str] = None
-    file_urls: List[str] = []
+    file_urls: List[str] = Field(default_factory=list)
+
+
+class MessageDTO(BaseModel):
+    id: int
+    room_id: int
+    sender_id: int
+    content: str
+    created_at: datetime
+    updated_at: datetime
+    files: List[str] = Field(default_factory=list)
