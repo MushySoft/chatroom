@@ -1,25 +1,24 @@
-from redis import Redis
 from fastapi import APIRouter, Depends, HTTPException, Response
+from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src import get_redis, get_db, Pagination, settings
+from src import Pagination, get_db, get_redis, settings
 from src.auth import get_current_user
 from src.core import User
-
 from src.rooms import service
 from src.rooms.schemas import (
     RoomCreate,
     RoomInvite,
     RoomInviteRespond,
-    RoomWithLastMessageOut,
     RoomUpdate,
+    RoomWithLastMessageOut,
 )
 
 router = APIRouter(prefix="/rooms", tags=["rooms"])
 
 
 @router.post("/", summary="Create a rooms")
-async def create_room(
+async def create_room(  # type: ignore[no-untyped-def]
     data: RoomCreate,
     response: Response,
     result: tuple[User, str | None] = Depends(get_current_user),
@@ -40,7 +39,7 @@ async def create_room(
 
 
 @router.post("/invite", summary="Invite user to a rooms")
-async def invite_user(
+async def invite_user(  # type: ignore[no-untyped-def]
     data: RoomInvite,
     response: Response,
     result: tuple[User, str | None] = Depends(get_current_user),
@@ -64,7 +63,7 @@ async def invite_user(
 
 
 @router.get("/invitations/sent", summary="View sent invitations")
-async def sent_invitations(
+async def get_sent_invitations(  # type: ignore[no-untyped-def]
     response: Response,
     result: tuple[User, str | None] = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
@@ -88,7 +87,7 @@ async def sent_invitations(
 
 
 @router.get("/invitations/received", summary="View received invitations")
-async def received_invitations(
+async def received_invitations(  # type: ignore[no-untyped-def]
     response: Response,
     result: tuple[User, str | None] = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
@@ -112,7 +111,7 @@ async def received_invitations(
 
 
 @router.post("/invitations/respond", summary="Respond to invitation")
-async def respond_to_invite(
+async def respond_to_invite(  # type: ignore[no-untyped-def]
     data: RoomInviteRespond,
     response: Response,
     result: tuple[User, str | None] = Depends(get_current_user),
@@ -139,7 +138,7 @@ async def respond_to_invite(
 
 
 @router.delete("/{room_id}/users/{user_id}", summary="Remove user from rooms")
-async def remove_user(
+async def remove_user(  # type: ignore[no-untyped-def]
     room_id: int,
     user_id: int,
     response: Response,
@@ -167,7 +166,7 @@ async def remove_user(
 
 
 @router.delete("/{room_id}/leave", summary="Leave rooms")
-async def leave_room(
+async def leave_room(  # type: ignore[no-untyped-def]
     room_id: int,
     response: Response,
     result: tuple[User, str | None] = Depends(get_current_user),
@@ -191,7 +190,7 @@ async def leave_room(
 
 
 @router.get("/{room_id}/participants", summary="List rooms participants")
-async def get_participants(
+async def get_participants(  # type: ignore[no-untyped-def]
     room_id: int,
     response: Response,
     result: tuple[User, str | None] = Depends(get_current_user),
@@ -216,7 +215,7 @@ async def get_participants(
 
 
 @router.get("/all", response_model=list[RoomWithLastMessageOut])
-async def get_all_rooms(
+async def get_all_rooms(  # type: ignore[no-untyped-def]
     response: Response,
     result: tuple[User, str | None] = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
@@ -243,7 +242,7 @@ async def get_all_rooms(
 
 
 @router.patch("/{room_id}", summary="Update rooms settings")
-async def patch_room(
+async def patch_room(  # type: ignore[no-untyped-def]
     room_id: int,
     data: RoomUpdate,
     response: Response,

@@ -1,12 +1,10 @@
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends
-from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect
 from sqlalchemy import select
-from redis.asyncio import Redis
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from src import get_db, get_redis
+from src import get_db
 from src.auth import get_current_user_ws
-from src.core import User, Room, RoomUser, Message
-
+from src.core import Message, Room, RoomUser, User
 from src.websocket.manager import manager
 from src.websocket.service import set_user_active, set_user_offline
 
@@ -14,10 +12,9 @@ router = APIRouter(prefix="/ws", tags=["websocket"])
 
 
 @router.websocket("")
-async def global_ws(
+async def global_ws(  # type: ignore[no-untyped-def]
     websocket: WebSocket,
     db: AsyncSession = Depends(get_db),
-    redis: Redis = Depends(get_redis),
     current_user: User = Depends(get_current_user_ws),
 ):
     await manager.connect(current_user.id, websocket)

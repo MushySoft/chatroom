@@ -1,20 +1,20 @@
-from fastapi import APIRouter, UploadFile, File, Depends, Response
+from fastapi import APIRouter, Depends, File, Response, UploadFile
+from redis.asyncio import Redis
 
 from src import get_redis, settings
 from src.auth import get_current_user
 from src.core import User
-
 from src.storage import service
 
 router = APIRouter(prefix="/files", tags=["files"])
 
 
 @router.post("/upload", summary="Upload file to MINIO")
-async def upload_file(
+async def upload_file(  # type: ignore[no-untyped-def]
     response: Response,
     result: tuple[User, str | None] = Depends(get_current_user),
     file: UploadFile = File(...),
-    redis=Depends(get_redis),
+    redis: Redis = Depends(get_redis),
 ):
     user, new_token = result
     if new_token:

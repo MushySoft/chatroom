@@ -4,7 +4,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src import get_db, settings
 from src.auth import get_current_user
 from src.core import User
-
 from src.user import service
 from src.user.schemas import UsernameUpdate
 
@@ -12,7 +11,7 @@ router = APIRouter(prefix="/user", tags=["user"])
 
 
 @router.get("/me", summary="Get current user")
-async def get_me(
+async def get_me(  # type: ignore[no-untyped-def]
     response: Response, result: tuple[User, str | None] = Depends(get_current_user)
 ):
     user, new_token = result
@@ -30,7 +29,7 @@ async def get_me(
 
 
 @router.patch("/username", summary="Update username")
-async def patch_username(
+async def patch_username(  # type: ignore[no-untyped-def]
     response: Response,
     data: UsernameUpdate,
     db: AsyncSession = Depends(get_db),
@@ -51,7 +50,7 @@ async def patch_username(
 
 
 @router.get("/search", summary="Search for users by username or email")
-async def search_users(
+async def search_users(  # type: ignore[no-untyped-def]
     username: str | None = None,
     email: str | None = None,
     db: AsyncSession = Depends(get_db),
@@ -60,7 +59,7 @@ async def search_users(
 
 
 @router.get("/{user_id}", summary="Get user")
-async def get_user_by_id(
+async def get_user_by_id(  # type: ignore[no-untyped-def]
     user_id: int,
     db: AsyncSession = Depends(get_db),
 ):

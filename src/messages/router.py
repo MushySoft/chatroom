@@ -1,19 +1,20 @@
-from fastapi import APIRouter, Depends, HTTPException, Response
-from sqlalchemy.ext.asyncio import AsyncSession
-from redis.asyncio import Redis
+from typing import List
 
-from src import Pagination, settings, get_db, get_redis
+from fastapi import APIRouter, Depends, HTTPException, Response
+from redis.asyncio import Redis
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from src import Pagination, get_db, get_redis, settings
 from src.auth.deps import get_current_user
 from src.core import User
-
-from src.messages.schemas import MessageCreate, MessageUpdate
 from src.messages import service
+from src.messages.schemas import MessageCreate, MessageDTO, MessageUpdate
 
 router = APIRouter(prefix="/messages", tags=["messages"])
 
 
-@router.post("/", summary="Send a messages")
-async def send_message(
+@router.post("/", summary="Send a message", response_model=dict)
+async def send_message(  # type: ignore[no-untyped-def]
     data: MessageCreate,
     response: Response,
     result: tuple[User, str | None] = Depends(get_current_user),
@@ -34,8 +35,12 @@ async def send_message(
     return await service.send_message(data=data, db=db, redis=redis, current_user=user)
 
 
-@router.get("/room/{room_id}", summary="Get messages from a rooms")
-async def get_messages_by_room(
+@router.get(
+    "/room/{room_id}",
+    summary="Get messages from a room",
+    response_model=List[MessageDTO],
+)
+async def get_messages_by_room(  # type: ignore[no-untyped-def]
     room_id: int,
     response: Response,
     result: tuple[User, str | None] = Depends(get_current_user),
@@ -61,8 +66,8 @@ async def get_messages_by_room(
     )
 
 
-@router.get("/{message_id}", summary="Get a messages by ID")
-async def get_message_by_id(
+@router.get("/{message_id}", summary="Get a message by ID", response_model=MessageDTO)
+async def get_message_by_id(  # type: ignore[no-untyped-def]
     message_id: int,
     response: Response,
     result: tuple[User, str | None] = Depends(get_current_user),
@@ -89,8 +94,8 @@ async def get_message_by_id(
     return message
 
 
-@router.put("/", summary="Update a messages")
-async def update_message(
+@router.put("/", summary="Update a message", response_model=dict)
+async def update_message(  # type: ignore[no-untyped-def]
     data: MessageUpdate,
     response: Response,
     result: tuple[User, str | None] = Depends(get_current_user),
@@ -115,8 +120,12 @@ async def update_message(
         raise HTTPException(status_code=403, detail="Permission denied")
 
 
-@router.delete("/{message_id}", summary="Delete a messages (soft delete)")
-async def delete_message(
+@router.delete(
+    "/{message_id}",
+    summary="Delete a message (soft delete)",
+    response_model=dict,
+)
+async def delete_message(  # type: ignore[no-untyped-def]
     message_id: int,
     response: Response,
     result: tuple[User, str | None] = Depends(get_current_user),
