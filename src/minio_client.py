@@ -1,6 +1,7 @@
 import io
-from minio import Minio
 from uuid import uuid4
+
+from minio import Minio
 
 from src.config import settings
 
