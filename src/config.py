@@ -23,9 +23,7 @@ class Settings(BaseSettings):
     MINIO_SECRET_KEY: str
     MINIO_BUCKET_NAME: str
 
-    model_config = SettingsConfigDict(
-        env_file=".env",
-        env_file_encoding="utf-8"
-    )
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
+
 
 settings = Settings()

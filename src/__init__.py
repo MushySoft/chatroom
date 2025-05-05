@@ -8,7 +8,7 @@ from src.pagination import Pagination
 
 __all__ = [
     "settings",
-    'Base',
+    "Base",
     "get_db",
     "get_redis",
     "TEMP_FILE_KEY",

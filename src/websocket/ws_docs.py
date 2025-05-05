@@ -11,9 +11,7 @@ def websocket_global_docs():
         "actions": {
             "get_room_list": {
                 "description": "Receive room list with last messages",
-                "request": {
-                    "action": "get_room_list"
-                },
+                "request": {"action": "get_room_list"},
                 "response": {
                     "type": "room_list",
                     "data": [
@@ -24,11 +22,11 @@ def websocket_global_docs():
                                 "id": "int",
                                 "content": "str",
                                 "created_at": "ISO datetime",
-                                "sender_id": "int"
-                            }
+                                "sender_id": "int",
+                            },
                         }
-                    ]
-                }
+                    ],
+                },
             }
         },
         "push_types": {
@@ -40,21 +38,17 @@ def websocket_global_docs():
                         "id": "int",
                         "content": "str",
                         "created_at": "ISO datetime",
-                        "sender_id": "int"
-                    }
-                }
+                        "sender_id": "int",
+                    },
+                },
             },
             "user_online": {
                 "description": "Push, that online",
-                "data": {
-                    "user_id": "int"
-                }
+                "data": {"user_id": "int"},
             },
             "user_offline": {
                 "description": "Push, that ofline",
-                "data": {
-                    "user_id": "int"
-                }
-            }
-        }
+                "data": {"user_id": "int"},
+            },
+        },
     }

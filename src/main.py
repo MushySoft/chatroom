@@ -5,9 +5,7 @@ from starlette.middleware.sessions import SessionMiddleware
 
 from src.config import settings
 
-app = FastAPI(
-    debug=settings.DEBUG
-)
+app = FastAPI(debug=settings.DEBUG)
 
 app.add_middleware(SessionMiddleware, secret_key=settings.SECRET_KEY)
 
@@ -22,11 +20,7 @@ def custom_openapi():
         routes=app.routes,
     )
     openapi_schema["components"]["securitySchemes"] = {
-        "BearerAuth": {
-            "type": "http",
-            "scheme": "bearer",
-            "bearerFormat": "JWT"
-        }
+        "BearerAuth": {"type": "http", "scheme": "bearer", "bearerFormat": "JWT"}
     }
     for path in openapi_schema["paths"].values():
         for method in path.values():
@@ -41,7 +35,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "https://mushysoft.online",  # разрешаем фронту
-        "http://localhost:3000"  # для разработки
+        "http://localhost:3000",  # для разработки
     ],
     allow_credentials=True,
     allow_methods=["*"],

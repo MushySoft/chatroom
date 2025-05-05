@@ -12,35 +12,33 @@ from src.messages.schemas import MessageCreate, MessageUpdate
 
 
 async def send_message(
-        data: MessageCreate,
-        db: AsyncSession,
-        redis: Redis,
-        current_user: User
+    data: MessageCreate, db: AsyncSession, redis: Redis, current_user: User
 ):
     new_msg = Message(
         room_id=data.room_id,
         sender_id=current_user.id,
         content=data.content,
         created_at=datetime.datetime.now(),
-        updated_at=datetime.datetime.now()
+        updated_at=datetime.datetime.now(),
     )
     db.add(new_msg)
     await db.flush()
 
     participants_result = await db.execute(
-        select(RoomUser.user_id)
-        .where(RoomUser.room_id == data.room_id)
+        select(RoomUser.user_id).where(RoomUser.room_id == data.room_id)
     )
     participant_ids = participants_result.scalars().all()
 
     for user_id in participant_ids:
         status_value = "sent" if user_id == current_user.id else "delivered"
-        db.add(MessageStatus(
-            message_id=new_msg.id,
-            user_id=user_id,
-            status=status_value,
-            updated_at=datetime.datetime.now()
-        ))
+        db.add(
+            MessageStatus(
+                message_id=new_msg.id,
+                user_id=user_id,
+                status=status_value,
+                updated_at=datetime.datetime.now(),
+            )
+        )
 
     files = await get_temp_files(redis, current_user.id)
     for file in files:
@@ -52,11 +50,7 @@ async def send_message(
     return {"message_id": new_msg.id}
 
 
-async def get_message_by_id(
-        message_id: int,
-        db: AsyncSession,
-        current_user: User
-):
+async def get_message_by_id(message_id: int, db: AsyncSession, current_user: User):
     result = await db.execute(
         select(Message)
         .options(selectinload(Message.files))
@@ -64,7 +58,7 @@ async def get_message_by_id(
         .where(
             Message.id == message_id,
             MessageStatus.user_id == current_user.id,
-            MessageStatus.status.in_(["delivered", "viewed"])
+            MessageStatus.status.in_(["delivered", "viewed"]),
         )
     )
     message = result.scalar_one_or_none()
@@ -76,7 +70,7 @@ async def get_message_by_id(
         update(MessageStatus)
         .where(
             MessageStatus.message_id == message.id,
-            MessageStatus.user_id == current_user.id
+            MessageStatus.user_id == current_user.id,
         )
         .values(status="viewed", updated_at=datetime.datetime.now())
     )
@@ -85,10 +79,10 @@ async def get_message_by_id(
 
 
 async def get_messages_by_room(
-        room_id: int,
-        db: AsyncSession,
-        current_user: User,
-        pagination: Pagination,
+    room_id: int,
+    db: AsyncSession,
+    current_user: User,
+    pagination: Pagination,
 ):
     result = await db.execute(
         select(Message)
@@ -97,7 +91,7 @@ async def get_messages_by_room(
         .where(
             Message.room_id == room_id,
             MessageStatus.user_id == current_user.id,
-            MessageStatus.status.in_(["delivered", "viewed"])
+            MessageStatus.status.in_(["delivered", "viewed"]),
         )
         .order_by(Message.created_at)
         .limit(pagination.limit)
@@ -109,7 +103,7 @@ async def get_messages_by_room(
         update(MessageStatus)
         .where(
             MessageStatus.message_id.in_([m.id for m in messages]),
-            MessageStatus.user_id == current_user.id
+            MessageStatus.user_id == current_user.id,
         )
         .values(status="viewed", updated_at=datetime.datetime.now())
     )
@@ -118,11 +112,7 @@ async def get_messages_by_room(
     return messages
 
 
-async def update_message(
-        data: MessageUpdate,
-        db: AsyncSession,
-        current_user: User
-):
+async def update_message(data: MessageUpdate, db: AsyncSession, current_user: User):
     result = await db.execute(
         select(Message)
         .where(Message.id == data.message_id)
@@ -141,9 +131,7 @@ async def update_message(
 
     message.updated_at = datetime.datetime.now()
 
-    await db.execute(
-        delete(FileStorage).where(FileStorage.message_id == message.id)
-    )
+    await db.execute(delete(FileStorage).where(FileStorage.message_id == message.id))
 
     for url in data.file_urls:
         db.add(FileStorage(message_id=message.id, file_url=url))
@@ -153,7 +141,7 @@ async def update_message(
         .where(
             MessageStatus.message_id == message.id,
             MessageStatus.user_id != current_user.id,
-            MessageStatus.status != "deleted"
+            MessageStatus.status != "deleted",
         )
         .values(status="delivered", updated_at=datetime.datetime.now())
     )
@@ -163,16 +151,12 @@ async def update_message(
     return {"message_id": message.id, "status": "updated"}
 
 
-async def delete_message(
-        message_id: int,
-        db: AsyncSession,
-        current_user: User
-):
+async def delete_message(message_id: int, db: AsyncSession, current_user: User):
     await db.execute(
         update(MessageStatus)
         .where(
             MessageStatus.message_id == message_id,
-            MessageStatus.user_id == current_user.id
+            MessageStatus.user_id == current_user.id,
         )
         .values(status="deleted", updated_at=datetime.datetime.now())
     )

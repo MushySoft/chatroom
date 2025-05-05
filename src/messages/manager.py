@@ -1,6 +1,7 @@
 from typing import Dict
 from fastapi import WebSocket
 
+
 class ChatConnectionManager:
     def __init__(self):
         self.active_connections: Dict[int, WebSocket] = {}
@@ -20,5 +21,6 @@ class ChatConnectionManager:
     async def broadcast_to_room(self, user_ids: list[int], message: dict):
         for uid in user_ids:
             await self.send_personal_message(uid, message)
+
 
 manager = ChatConnectionManager()

@@ -15,4 +15,3 @@ async_session_maker = sessionmaker(
 
 
 AsyncSessionLocal = async_session_maker
-

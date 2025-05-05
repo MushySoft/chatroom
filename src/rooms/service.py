@@ -15,14 +15,9 @@ from src.cache import (
     get_cached_invites,
     set_cached_invites,
 )
-from src.core import (
-    Room, RoomUser, RoomInvitation, RoomInvitationStatus,
-    User, Message
-)
+from src.core import Room, RoomUser, RoomInvitation, RoomInvitationStatus, User, Message
 
-from src.rooms.schemas import (
-    RoomCreate, RoomInvite, RoomInviteRespond, RoomUpdate
-)
+from src.rooms.schemas import RoomCreate, RoomInvite, RoomInviteRespond, RoomUpdate
 
 
 async def create_room(data: RoomCreate, db: AsyncSession, current_user: User):
@@ -31,29 +26,26 @@ async def create_room(data: RoomCreate, db: AsyncSession, current_user: User):
         is_private=data.is_private,
         created_by=current_user.id,
         created_at=datetime.datetime.now(),
-        updated_at=datetime.datetime.now()
+        updated_at=datetime.datetime.now(),
     )
     db.add(new_room)
     await db.flush()
 
-    db.add(RoomUser(
-        room_id=new_room.id,
-        user_id=current_user.id,
-        joined_at=datetime.datetime.now()
-    ))
+    db.add(
+        RoomUser(
+            room_id=new_room.id,
+            user_id=current_user.id,
+            joined_at=datetime.datetime.now(),
+        )
+    )
     await db.commit()
     return new_room
 
 
-async def invite_user(
-        data: RoomInvite,
-        db: AsyncSession,
-        current_user: User
-):
+async def invite_user(data: RoomInvite, db: AsyncSession, current_user: User):
     result = await db.execute(
         select(RoomUser).where(
-            RoomUser.room_id == data.room_id,
-            RoomUser.user_id == current_user.id
+            RoomUser.room_id == data.room_id, RoomUser.user_id == current_user.id
         )
     )
     if not result.scalar_one_or_none():
@@ -63,32 +55,31 @@ async def invite_user(
         room_id=data.room_id,
         sender_id=current_user.id,
         receiver_id=data.receiver_id,
-        created_at=datetime.datetime.now()
+        created_at=datetime.datetime.now(),
     )
     db.add(invitation)
     await db.flush()
 
-    db.add(RoomInvitationStatus(
-        invitation_id=invitation.id,
-        status="pending",
-        updated_at=datetime.datetime.now()
-    ))
+    db.add(
+        RoomInvitationStatus(
+            invitation_id=invitation.id,
+            status="pending",
+            updated_at=datetime.datetime.now(),
+        )
+    )
     await db.commit()
     return {"invitation_id": invitation.id, "status": "pending"}
 
 
 async def get_sent_invites(
-        db: AsyncSession,
-        current_user: User,
-        pagination: Pagination,
-        redis: Redis
+    db: AsyncSession, current_user: User, pagination: Pagination, redis: Redis
 ):
     cached = await get_cached_invites(
         redis,
         current_user.id,
         sent=True,
         limit=pagination.limit,
-        offset=pagination.offset
+        offset=pagination.offset,
     )
     if cached:
         return cached
@@ -108,8 +99,9 @@ async def get_sent_invites(
             "room_id": i.room_id,
             "receiver_id": i.receiver_id,
             "status": i.status.status,
-            "created_at": i.created_at
-        } for i in invites
+            "created_at": i.created_at,
+        }
+        for i in invites
     ]
     await set_cached_invites(
         redis,
@@ -117,22 +109,20 @@ async def get_sent_invites(
         sent=True,
         limit=pagination.limit,
         offset=pagination.offset,
-        data=data)
+        data=data,
+    )
     return data
 
 
 async def get_received_invites(
-        db: AsyncSession,
-        current_user: User,
-        pagination: Pagination,
-        redis: Redis
+    db: AsyncSession, current_user: User, pagination: Pagination, redis: Redis
 ):
     cached = await get_cached_invites(
         redis,
         current_user.id,
         sent=False,
         limit=pagination.limit,
-        offset=pagination.offset
+        offset=pagination.offset,
     )
     if cached:
         return cached
@@ -152,8 +142,9 @@ async def get_received_invites(
             "room_id": i.room_id,
             "receiver_id": i.receiver_id,
             "status": i.status.status,
-            "created_at": i.created_at
-        } for i in invites
+            "created_at": i.created_at,
+        }
+        for i in invites
     ]
     await set_cached_invites(
         redis,
@@ -161,19 +152,16 @@ async def get_received_invites(
         sent=False,
         limit=pagination.limit,
         offset=pagination.offset,
-        data=data)
+        data=data,
+    )
     return data
 
 
 async def respond_to_invite(
-        data: RoomInviteRespond,
-        db: AsyncSession,
-        current_user: User,
-        redis: Redis
+    data: RoomInviteRespond, db: AsyncSession, current_user: User, redis: Redis
 ):
     result = await db.execute(
-        select(RoomInvitation)
-        .where(RoomInvitation.id == data.invitation_id)
+        select(RoomInvitation).where(RoomInvitation.id == data.invitation_id)
     )
     invitation = result.scalar_one_or_none()
 
@@ -188,11 +176,13 @@ async def respond_to_invite(
     )
 
     if data.accept:
-        db.add(RoomUser(
-            room_id=invitation.room_id,
-            user_id=current_user.id,
-            joined_at=datetime.datetime.now()
-        ))
+        db.add(
+            RoomUser(
+                room_id=invitation.room_id,
+                user_id=current_user.id,
+                joined_at=datetime.datetime.now(),
+            )
+        )
         await delete_cached_participants(redis, invitation.room_id)
 
     await db.commit()
@@ -200,11 +190,7 @@ async def respond_to_invite(
 
 
 async def remove_user_from_room(
-        room_id: int,
-        user_id: int,
-        db: AsyncSession,
-        current_user: User,
-        redis: Redis
+    room_id: int, user_id: int, db: AsyncSession, current_user: User, redis: Redis
 ):
     result = await db.execute(select(Room).where(Room.id == room_id))
     room = result.scalar_one_or_none()
@@ -213,23 +199,18 @@ async def remove_user_from_room(
         raise PermissionError("Only the rooms owner can remove users")
 
     await db.execute(
-        delete(RoomUser)
-        .where(RoomUser.room_id == room_id, RoomUser.user_id == user_id)
+        delete(RoomUser).where(RoomUser.room_id == room_id, RoomUser.user_id == user_id)
     )
     await db.commit()
     await delete_cached_participants(redis, room_id)
     return {"status": "removed"}
 
 
-async def leave_room(
-        room_id: int,
-        db: AsyncSession,
-        current_user: User,
-        redis: Redis
-):
+async def leave_room(room_id: int, db: AsyncSession, current_user: User, redis: Redis):
     await db.execute(
-        delete(RoomUser)
-        .where(RoomUser.room_id == room_id, RoomUser.user_id == current_user.id)
+        delete(RoomUser).where(
+            RoomUser.room_id == room_id, RoomUser.user_id == current_user.id
+        )
     )
     await db.commit()
     await delete_cached_participants(redis, room_id)
@@ -237,10 +218,7 @@ async def leave_room(
 
 
 async def get_room_participants(
-        room_id: int,
-        db: AsyncSession,
-        pagination: Pagination,
-        redis: Redis
+    room_id: int, db: AsyncSession, pagination: Pagination, redis: Redis
 ):
     cached = await get_cached_participants(redis, room_id)
     if cached:
@@ -255,10 +233,7 @@ async def get_room_participants(
     participants = result.scalars().all()
 
     serialized = [
-        {
-            "user_id": p.user_id,
-            "joined_at": p.joined_at
-        } for p in participants
+        {"user_id": p.user_id, "joined_at": p.joined_at} for p in participants
     ]
 
     await set_cached_participants(redis, room_id, serialized)
@@ -266,12 +241,14 @@ async def get_room_participants(
 
 
 async def get_rooms(
-        db: AsyncSession,
-        redis: Redis,
-        current_user: User,
-        pagination: Pagination,
+    db: AsyncSession,
+    redis: Redis,
+    current_user: User,
+    pagination: Pagination,
 ):
-    cached = await get_cached_rooms(redis, current_user.id, pagination.limit, pagination.offset)
+    cached = await get_cached_rooms(
+        redis, current_user.id, pagination.limit, pagination.offset
+    )
     if cached:
         return cached
 
@@ -294,29 +271,34 @@ async def get_rooms(
         )
         last_msg = msg_result.scalar_one_or_none()
 
-        room_data.append({
-            "id": room.id,
-            "name": room.name,
-            "is_private": room.is_private,
-            "created_by": room.created_by,
-            "created_at": room.created_at,
-            "last_message": {
-                "id": last_msg.id,
-                "content": last_msg.content,
-                "created_at": last_msg.created_at,
-                "sender_id": last_msg.sender_id
-            } if last_msg else None
-        })
+        room_data.append(
+            {
+                "id": room.id,
+                "name": room.name,
+                "is_private": room.is_private,
+                "created_by": room.created_by,
+                "created_at": room.created_at,
+                "last_message": (
+                    {
+                        "id": last_msg.id,
+                        "content": last_msg.content,
+                        "created_at": last_msg.created_at,
+                        "sender_id": last_msg.sender_id,
+                    }
+                    if last_msg
+                    else None
+                ),
+            }
+        )
 
-    await set_cached_rooms(redis, current_user.id, pagination.limit, pagination.offset, room_data)
+    await set_cached_rooms(
+        redis, current_user.id, pagination.limit, pagination.offset, room_data
+    )
     return room_data
 
 
 async def update_room(
-        room_id: int,
-        data: RoomUpdate,
-        db: AsyncSession,
-        current_user: User
+    room_id: int, data: RoomUpdate, db: AsyncSession, current_user: User
 ):
     result = await db.execute(select(Room).where(Room.id == room_id))
     room = result.scalar_one_or_none()
@@ -325,7 +307,9 @@ async def update_room(
         raise HTTPException(status_code=404, detail="Room not found")
 
     if room.created_by != current_user.id:
-        raise HTTPException(status_code=403, detail="You are not the owner of this rooms")
+        raise HTTPException(
+            status_code=403, detail="You are not the owner of this rooms"
+        )
 
     if data.name is not None:
         room.name = data.name

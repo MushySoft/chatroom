@@ -5,10 +5,11 @@ from sqlalchemy import select
 
 from src.core import UserStatus
 
+
 async def set_user_active(user_id: int, db: AsyncSession):
-    status = (await db.execute(
-        select(UserStatus).where(UserStatus.user_id == user_id)
-    )).scalar_one_or_none()
+    status = (
+        await db.execute(select(UserStatus).where(UserStatus.user_id == user_id))
+    ).scalar_one_or_none()
 
     if status:
         status.status = "active"
@@ -19,9 +20,9 @@ async def set_user_active(user_id: int, db: AsyncSession):
 
 
 async def set_user_offline(user_id: int, db: AsyncSession):
-    status = (await db.execute(
-        select(UserStatus).where(UserStatus.user_id == user_id)
-    )).scalar_one_or_none()
+    status = (
+        await db.execute(select(UserStatus).where(UserStatus.user_id == user_id))
+    ).scalar_one_or_none()
 
     if status:
         status.status = "offline"

@@ -1,10 +1,4 @@
-from fastapi import (
-    Depends,
-    Header,
-    WebSocket,
-    status,
-    Cookie
-)
+from fastapi import Depends, Header, WebSocket, status, Cookie
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from authlib.integrations.httpx_client import AsyncOAuth2Client
@@ -19,7 +13,7 @@ from src.auth.exceptions import AuthException
 async def get_current_user(
     authorization: str | None = Header(default=None, alias="Authorization"),
     token_cookie: str | None = Cookie(default=None),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ) -> Tuple[User, Optional[str]]:
     if authorization and authorization.startswith("Bearer "):
         token = authorization.split(" ")[1]
@@ -28,7 +22,9 @@ async def get_current_user(
     else:
         raise AuthException("Токен не найден")
 
-    async with AsyncOAuth2Client(token={"access_token": token, "token_type": "Bearer"}) as client:
+    async with AsyncOAuth2Client(
+        token={"access_token": token, "token_type": "Bearer"}
+    ) as client:
         try:
             resp = await client.get("https://openidconnect.googleapis.com/v1/userinfo")
             resp.raise_for_status()
@@ -36,7 +32,10 @@ async def get_current_user(
             email = user_info.get("email")
         except Exception:
             try:
-                token_info = await client.get("https://oauth2.googleapis.com/tokeninfo", params={"access_token": token})
+                token_info = await client.get(
+                    "https://oauth2.googleapis.com/tokeninfo",
+                    params={"access_token": token},
+                )
                 token_info.raise_for_status()
                 auth_id = token_info.json().get("sub")
             except Exception:
@@ -49,12 +48,17 @@ async def get_current_user(
             try:
                 new_token = await client.refresh_token(
                     url="https://oauth2.googleapis.com/token",
-                    refresh_token=user.refresh_token
+                    refresh_token=user.refresh_token,
                 )
                 new_access_token = new_token["access_token"]
-                client.token = {"access_token": new_access_token, "token_type": "Bearer"}
+                client.token = {
+                    "access_token": new_access_token,
+                    "token_type": "Bearer",
+                }
 
-                resp = await client.get("https://openidconnect.googleapis.com/v1/userinfo")
+                resp = await client.get(
+                    "https://openidconnect.googleapis.com/v1/userinfo"
+                )
                 resp.raise_for_status()
                 user_info = resp.json()
                 email = user_info.get("email")
@@ -82,7 +86,7 @@ async def get_current_user(
 async def get_current_user_ws(
     websocket: WebSocket,
     db: AsyncSession = Depends(get_db),
-    token_cookie: str | None = Cookie(default=None)
+    token_cookie: str | None = Cookie(default=None),
 ) -> User:
     auth_header = websocket.headers.get("authorization")
 
@@ -94,7 +98,9 @@ async def get_current_user_ws(
         await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
         raise AuthException("Токен не найден")
 
-    async with AsyncOAuth2Client(token={"access_token": token, "token_type": "Bearer"}) as client:
+    async with AsyncOAuth2Client(
+        token={"access_token": token, "token_type": "Bearer"}
+    ) as client:
         try:
             resp = await client.get("https://openidconnect.googleapis.com/v1/userinfo")
             resp.raise_for_status()

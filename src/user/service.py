@@ -17,11 +17,7 @@ async def get_user_info(current_user: User):
     }
 
 
-async def update_username(
-        data: UsernameUpdate,
-        db: AsyncSession,
-        current_user: User
-):
+async def update_username(data: UsernameUpdate, db: AsyncSession, current_user: User):
     result = await db.execute(select(User).where(User.username == data.username))
     existing_user = result.scalar_one_or_none()
     if existing_user and existing_user.id != current_user.id:
@@ -33,8 +29,8 @@ async def update_username(
 
 
 async def get_user_by_id(
-        user_id: int,
-        db: AsyncSession,
+    user_id: int,
+    db: AsyncSession,
 ):
     result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
@@ -46,9 +42,9 @@ async def get_user_by_id(
 
 
 async def search_users(
-        username: str | None,
-        email: str | None,
-        db: AsyncSession,
+    username: str | None,
+    email: str | None,
+    db: AsyncSession,
 ):
     query = select(User).options(joinedload(User.status))
 

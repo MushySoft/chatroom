@@ -26,20 +26,16 @@ async def login(request: Request):
     if settings.DEBUG:
         redirect_uri = str(request.url_for("auth_callback"))
     else:
-        redirect_uri = str(request.url_for("auth_callback")).replace("http://", "https://")
+        redirect_uri = str(request.url_for("auth_callback")).replace(
+            "http://", "https://"
+        )
     response = await oauth.google.authorize_redirect(
-        request,
-        redirect_uri,
-        access_type="offline",
-        prompt="consent"
+        request, redirect_uri, access_type="offline", prompt="consent"
     )
     return response
 
 
-async def auth_callback(
-        request: Request,
-        db: AsyncSession
-):
+async def auth_callback(request: Request, db: AsyncSession):
     token = await oauth.google.authorize_access_token(request)
     logger.info(token)
 
@@ -61,13 +57,13 @@ async def auth_callback(
                     if response.status == 200:
                         content = await response.read()
                         filename = f"avatars/{user_info['sub']}.jpg"
-                        avatar_minio_url = upload_file_to_minio(content, filename, "image/jpeg")
+                        avatar_minio_url = upload_file_to_minio(
+                            content, filename, "image/jpeg"
+                        )
         except Exception as e:
             logger.warning(f"Ошибка при загрузке аватарки: {e}")
 
-    user = await db.execute(
-        select(User).where(User.email == user_info["email"])
-    )
+    user = await db.execute(select(User).where(User.email == user_info["email"]))
     user = user.scalar_one_or_none()
 
     if not user:
@@ -77,7 +73,7 @@ async def auth_callback(
             auth_provider="google",
             auth_id=user_info["sub"],
             avatar_url=avatar_minio_url,
-            refresh_token=refresh_token
+            refresh_token=refresh_token,
         )
         db.add(user)
         await db.commit()
@@ -87,9 +83,7 @@ async def auth_callback(
             user.refresh_token = refresh_token
         await db.commit()
 
-    status = await db.execute(
-        select(UserStatus).where(UserStatus.user_id == user.id)
-    )
+    status = await db.execute(select(UserStatus).where(UserStatus.user_id == user.id))
     status = status.scalar_one_or_none()
 
     if not status:
@@ -101,14 +95,16 @@ async def auth_callback(
     await db.commit()
 
     if settings.DEBUG:
-        return JSONResponse({
-            "access_token": access_token,
-            "user": {
-                "id": user.id,
-                "username": user.username,
-                "avatar_url": user.avatar_url
+        return JSONResponse(
+            {
+                "access_token": access_token,
+                "user": {
+                    "id": user.id,
+                    "username": user.username,
+                    "avatar_url": user.avatar_url,
+                },
             }
-        })
+        )
 
     response = RedirectResponse(settings.REDIRECT_URL)
     response.set_cookie(
@@ -124,13 +120,12 @@ async def auth_callback(
     return response
 
 
-async def logout(
-        db: AsyncSession,
-        current_user: User
-):
-    user_status = (await db.execute(
-        select(UserStatus).where(UserStatus.user_id == current_user.id)
-    )).scalar_one_or_none()
+async def logout(db: AsyncSession, current_user: User):
+    user_status = (
+        await db.execute(
+            select(UserStatus).where(UserStatus.user_id == current_user.id)
+        )
+    ).scalar_one_or_none()
 
     if not user_status:
         status = UserStatus(user_id=current_user.id, status="offline")
@@ -138,9 +133,9 @@ async def logout(
     else:
         user_status.status = "offline"
 
-    user = (await db.execute(
-        select(User).where(User.id == current_user.id)
-    )).scalar_one_or_none()
+    user = (
+        await db.execute(select(User).where(User.id == current_user.id))
+    ).scalar_one_or_none()
 
     if user:
         user.refresh = None
