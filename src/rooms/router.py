@@ -7,19 +7,29 @@ from src.auth import get_current_user
 from src.core import User
 from src.rooms import service
 from src.rooms.schemas import (
-    RoomCreate,
-    RoomInvite,
-    RoomInviteRespond,
-    RoomUpdate,
+    LeaveRoomResponse,
+    RemoveUserResponse,
+    RoomCreateRequest,
+    RoomCreateResponse,
+    RoomInvitationOut,
+    RoomInviteRequest,
+    RoomInviteRespondRequest,
+    RoomInviteRespondResponse,
+    RoomInviteResponse,
+    RoomParticipantOut,
+    RoomUpdateRequest,
+    RoomUpdateResponse,
     RoomWithLastMessageOut,
 )
 
 router = APIRouter(prefix="/rooms", tags=["rooms"])
 
 
-@router.post("/", summary="Create a rooms")
+@router.post(
+    "/", summary="Create a rooms", response_model=RoomCreateResponse, status_code=201
+)
 async def create_room(  # type: ignore[no-untyped-def]
-    data: RoomCreate,
+    data: RoomCreateRequest,
     response: Response,
     result: tuple[User, str | None] = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
@@ -38,9 +48,14 @@ async def create_room(  # type: ignore[no-untyped-def]
     return await service.create_room(data=data, db=db, current_user=user)
 
 
-@router.post("/invite", summary="Invite user to a rooms")
+@router.post(
+    "/invite",
+    summary="Invite user to a rooms",
+    response_model=RoomInviteResponse,
+    status_code=201,
+)
 async def invite_user(  # type: ignore[no-untyped-def]
-    data: RoomInvite,
+    data: RoomInviteRequest,
     response: Response,
     result: tuple[User, str | None] = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
@@ -62,7 +77,12 @@ async def invite_user(  # type: ignore[no-untyped-def]
         raise HTTPException(status_code=403, detail=str(e))
 
 
-@router.get("/invitations/sent", summary="View sent invitations")
+@router.get(
+    "/invitations/sent",
+    summary="View sent invitations",
+    response_model=list[RoomInvitationOut],
+    status_code=200,
+)
 async def get_sent_invitations(  # type: ignore[no-untyped-def]
     response: Response,
     result: tuple[User, str | None] = Depends(get_current_user),
@@ -86,7 +106,12 @@ async def get_sent_invitations(  # type: ignore[no-untyped-def]
     )
 
 
-@router.get("/invitations/received", summary="View received invitations")
+@router.get(
+    "/invitations/received",
+    summary="View received invitations",
+    response_model=list[RoomInvitationOut],
+    status_code=200,
+)
 async def received_invitations(  # type: ignore[no-untyped-def]
     response: Response,
     result: tuple[User, str | None] = Depends(get_current_user),
@@ -110,9 +135,14 @@ async def received_invitations(  # type: ignore[no-untyped-def]
     )
 
 
-@router.post("/invitations/respond", summary="Respond to invitation")
+@router.post(
+    "/invitations/respond",
+    summary="Respond to invitation",
+    response_model=RoomInviteRespondResponse,
+    status_code=200,
+)
 async def respond_to_invite(  # type: ignore[no-untyped-def]
-    data: RoomInviteRespond,
+    data: RoomInviteRespondRequest,
     response: Response,
     result: tuple[User, str | None] = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
@@ -137,7 +167,12 @@ async def respond_to_invite(  # type: ignore[no-untyped-def]
         raise HTTPException(status_code=403, detail=str(e))
 
 
-@router.delete("/{room_id}/users/{user_id}", summary="Remove user from rooms")
+@router.delete(
+    "/{room_id}/users/{user_id}",
+    summary="Remove user from rooms",
+    response_model=RemoveUserResponse,
+    status_code=200,
+)
 async def remove_user(  # type: ignore[no-untyped-def]
     room_id: int,
     user_id: int,
@@ -157,15 +192,18 @@ async def remove_user(  # type: ignore[no-untyped-def]
             domain=".mushysoft.online",
             max_age=settings.TOKEN_EXPIRE_SECONDS,
         )
-    try:
+
         return await service.remove_user_from_room(
             room_id=room_id, user_id=user_id, db=db, current_user=user, redis=redis
         )
-    except PermissionError as e:
-        raise HTTPException(status_code=403, detail=str(e))
 
 
-@router.delete("/{room_id}/leave", summary="Leave rooms")
+@router.delete(
+    "/{room_id}/leave",
+    summary="Leave rooms",
+    response_model=LeaveRoomResponse,
+    status_code=200,
+)
 async def leave_room(  # type: ignore[no-untyped-def]
     room_id: int,
     response: Response,
@@ -189,7 +227,12 @@ async def leave_room(  # type: ignore[no-untyped-def]
     )
 
 
-@router.get("/{room_id}/participants", summary="List rooms participants")
+@router.get(
+    "/{room_id}/participants",
+    summary="List rooms participants",
+    response_model=list[RoomParticipantOut],
+    status_code=200,
+)
 async def get_participants(  # type: ignore[no-untyped-def]
     room_id: int,
     response: Response,
@@ -214,7 +257,7 @@ async def get_participants(  # type: ignore[no-untyped-def]
     )
 
 
-@router.get("/all", response_model=list[RoomWithLastMessageOut])
+@router.get("/all", response_model=list[RoomWithLastMessageOut], status_code=200)
 async def get_all_rooms(  # type: ignore[no-untyped-def]
     response: Response,
     result: tuple[User, str | None] = Depends(get_current_user),
@@ -241,10 +284,15 @@ async def get_all_rooms(  # type: ignore[no-untyped-def]
     )
 
 
-@router.patch("/{room_id}", summary="Update rooms settings")
+@router.patch(
+    "/{room_id}",
+    summary="Update rooms settings",
+    response_model=RoomUpdateResponse,
+    status_code=200,
+)
 async def patch_room(  # type: ignore[no-untyped-def]
     room_id: int,
-    data: RoomUpdate,
+    data: RoomUpdateRequest,
     response: Response,
     result: tuple[User, str | None] = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),

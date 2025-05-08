@@ -1,5 +1,5 @@
 import datetime
-from typing import Any
+import json
 
 from fastapi import HTTPException
 from redis.asyncio import Redis
@@ -18,17 +18,26 @@ from src.cache import (
 )
 from src.core import Message, Room, RoomInvitation, RoomInvitationStatus, RoomUser, User
 from src.rooms.schemas import (
-    RoomCreate,
+    LastMessageOut,
+    LeaveRoomResponse,
+    RemoveUserResponse,
+    RoomCreateRequest,
+    RoomCreateResponse,
     RoomInvitationOut,
-    RoomInvite,
-    RoomInviteRespond,
+    RoomInviteRequest,
+    RoomInviteRespondRequest,
+    RoomInviteRespondResponse,
+    RoomInviteResponse,
     RoomParticipantOut,
-    RoomUpdate,
+    RoomUpdateRequest,
+    RoomUpdateResponse,
     RoomWithLastMessageOut,
 )
 
 
-async def create_room(data: RoomCreate, db: AsyncSession, current_user: User) -> Room:
+async def create_room(
+    data: RoomCreateRequest, db: AsyncSession, current_user: User
+) -> RoomCreateResponse:
     new_room = Room(
         name=data.name,
         is_private=data.is_private,
@@ -47,12 +56,19 @@ async def create_room(data: RoomCreate, db: AsyncSession, current_user: User) ->
         )
     )
     await db.commit()
-    return new_room
+    return RoomCreateResponse(
+        id=new_room.id,
+        name=new_room.name,
+        is_private=new_room.is_private,
+        created_by=new_room.created_by,
+        created_at=new_room.created_at,
+        updated_at=new_room.updated_at,
+    )
 
 
 async def invite_user(
-    data: RoomInvite, db: AsyncSession, current_user: User
-) -> dict[str, Any]:
+    data: RoomInviteRequest, db: AsyncSession, current_user: User
+) -> RoomInviteResponse:
     result = await db.execute(
         select(RoomUser).where(
             RoomUser.room_id == data.room_id, RoomUser.user_id == current_user.id
@@ -78,12 +94,12 @@ async def invite_user(
         )
     )
     await db.commit()
-    return {"invitation_id": invitation.id, "status": "pending"}
+    return RoomInviteResponse(invitation_id=invitation.id)
 
 
 async def get_sent_invites(
     db: AsyncSession, current_user: User, pagination: Pagination, redis: Redis
-) -> list[RoomInvitationOut | None] | list[dict[str, Any]]:
+) -> list[RoomInvitationOut] | None:
     cached = await get_cached_invites(
         redis,
         current_user.id,
@@ -92,7 +108,7 @@ async def get_sent_invites(
         offset=pagination.offset,
     )
     if cached:
-        return cached
+        return [RoomInvitationOut.model_validate(json.loads(c)) for c in cached]
 
     result = await db.execute(
         select(RoomInvitation)
@@ -104,38 +120,39 @@ async def get_sent_invites(
     invites = result.scalars().all()
 
     data = [
-        {
-            "invitation_id": i.id,
-            "room_id": i.room_id,
-            "receiver_id": i.receiver_id,
-            "status": i.status.status,
-            "created_at": i.created_at,
-        }
+        RoomInvitationOut(
+            id=i.id,
+            room_id=i.room_id,
+            sender_id=i.sender_id,
+            receiver_id=i.receiver_id,
+            status=i.status.status,
+            created_at=i.created_at,
+        )
         for i in invites
     ]
     await set_cached_invites(
-        redis,
-        current_user.id,
+        redis=redis,
+        user_id=current_user.id,
         sent=True,
         limit=pagination.limit,
         offset=pagination.offset,
-        data=data,
+        data=[i.model_dump_json() for i in data],
     )
     return data
 
 
 async def get_received_invites(
     db: AsyncSession, current_user: User, pagination: Pagination, redis: Redis
-) -> list[RoomInvitationOut | None] | list[dict[str, Any]]:
+) -> list[RoomInvitationOut] | None:
     cached = await get_cached_invites(
-        redis,
-        current_user.id,
+        redis=redis,
+        user_id=current_user.id,
         sent=False,
         limit=pagination.limit,
         offset=pagination.offset,
     )
     if cached:
-        return cached
+        return [RoomInvitationOut.model_validate(json.loads(c)) for c in cached]
 
     result = await db.execute(
         select(RoomInvitation)
@@ -147,29 +164,30 @@ async def get_received_invites(
     invites = result.scalars().all()
 
     data = [
-        {
-            "invitation_id": i.id,
-            "room_id": i.room_id,
-            "receiver_id": i.receiver_id,
-            "status": i.status.status,
-            "created_at": i.created_at,
-        }
+        RoomInvitationOut(
+            id=i.id,
+            room_id=i.room_id,
+            sender_id=i.sender_id,
+            receiver_id=i.receiver_id,
+            status=i.status.status,
+            created_at=i.created_at,
+        )
         for i in invites
     ]
     await set_cached_invites(
-        redis,
-        current_user.id,
+        redis=redis,
+        user_id=current_user.id,
         sent=False,
         limit=pagination.limit,
         offset=pagination.offset,
-        data=data,
+        data=[i.model_dump_json() for i in data],
     )
     return data
 
 
 async def respond_to_invite(
-    data: RoomInviteRespond, db: AsyncSession, current_user: User, redis: Redis
-) -> dict[str, str]:
+    data: RoomInviteRespondRequest, db: AsyncSession, current_user: User, redis: Redis
+) -> RoomInviteRespondResponse:
     result = await db.execute(
         select(RoomInvitation).where(RoomInvitation.id == data.invitation_id)
     )
@@ -193,15 +211,15 @@ async def respond_to_invite(
                 joined_at=datetime.datetime.now(),
             )
         )
-        await delete_cached_participants(redis, invitation.room_id)
+        await delete_cached_participants(redis=redis, room_id=invitation.room_id)
 
     await db.commit()
-    return {"status": status}
+    return RoomInviteRespondResponse(status=status)
 
 
 async def remove_user_from_room(
     room_id: int, user_id: int, db: AsyncSession, current_user: User, redis: Redis
-) -> dict[str, str]:
+) -> RemoveUserResponse:
     result = await db.execute(select(Room).where(Room.id == room_id))
     room = result.scalar_one_or_none()
 
@@ -212,29 +230,29 @@ async def remove_user_from_room(
         delete(RoomUser).where(RoomUser.room_id == room_id, RoomUser.user_id == user_id)
     )
     await db.commit()
-    await delete_cached_participants(redis, room_id)
-    return {"status": "removed"}
+    await delete_cached_participants(redis=redis, room_id=room_id)
+    return RemoveUserResponse()
 
 
 async def leave_room(
     room_id: int, db: AsyncSession, current_user: User, redis: Redis
-) -> dict[str, str]:
+) -> LeaveRoomResponse:
     await db.execute(
         delete(RoomUser).where(
             RoomUser.room_id == room_id, RoomUser.user_id == current_user.id
         )
     )
     await db.commit()
-    await delete_cached_participants(redis, room_id)
-    return {"status": "left"}
+    await delete_cached_participants(redis=redis, room_id=room_id)
+    return LeaveRoomResponse()
 
 
 async def get_room_participants(
     room_id: int, db: AsyncSession, pagination: Pagination, redis: Redis
-) -> list[RoomParticipantOut | None] | list[dict[str, Any]]:
+) -> list[RoomParticipantOut] | None:
     cached = await get_cached_participants(redis, room_id)
     if cached:
-        return cached
+        return [RoomParticipantOut.model_validate(json.loads(c)) for c in cached]
 
     result = await db.execute(
         select(RoomUser)
@@ -244,12 +262,12 @@ async def get_room_participants(
     )
     participants = result.scalars().all()
 
-    serialized = [
-        {"user_id": p.user_id, "joined_at": p.joined_at} for p in participants
-    ]
+    data = [RoomParticipantOut.model_validate(p) for p in participants]
 
-    await set_cached_participants(redis, room_id, serialized)
-    return serialized
+    await set_cached_participants(
+        redis=redis, room_id=room_id, data=[i.model_dump_json() for i in data]
+    )
+    return data
 
 
 async def get_rooms(
@@ -257,12 +275,12 @@ async def get_rooms(
     redis: Redis,
     current_user: User,
     pagination: Pagination,
-) -> list[RoomWithLastMessageOut | None] | list[dict[str, Any]]:
+) -> list[RoomWithLastMessageOut] | None:
     cached = await get_cached_rooms(
         redis, current_user.id, pagination.limit, pagination.offset
     )
     if cached:
-        return cached
+        return [RoomWithLastMessageOut.model_validate(json.loads(c)) for c in cached]
 
     result = await db.execute(
         select(Room)
@@ -284,34 +302,38 @@ async def get_rooms(
         last_msg = msg_result.scalar_one_or_none()
 
         room_data.append(
-            {
-                "id": room.id,
-                "name": room.name,
-                "is_private": room.is_private,
-                "created_by": room.created_by,
-                "created_at": room.created_at,
-                "last_message": (
-                    {
-                        "id": last_msg.id,
-                        "content": last_msg.content,
-                        "created_at": last_msg.created_at,
-                        "sender_id": last_msg.sender_id,
-                    }
+            RoomWithLastMessageOut(
+                id=room.id,
+                name=room.name,
+                is_private=room.is_private,
+                created_by=room.created_by,
+                created_at=room.created_at,
+                last_message=(
+                    LastMessageOut(
+                        id=last_msg.id,
+                        content=last_msg.content,
+                        created_at=last_msg.created_at,
+                        sender_id=last_msg.sender_id,
+                    )
                     if last_msg
                     else None
                 ),
-            }
+            )
         )
 
     await set_cached_rooms(
-        redis, current_user.id, pagination.limit, pagination.offset, room_data
+        redis=redis,
+        user_id=current_user.id,
+        limit=pagination.limit,
+        offset=pagination.offset,
+        data=[r.model_dump_json() for r in room_data],
     )
     return room_data
 
 
 async def update_room(
-    room_id: int, data: RoomUpdate, db: AsyncSession, current_user: User
-) -> dict[str, str]:
+    room_id: int, data: RoomUpdateRequest, db: AsyncSession, current_user: User
+) -> RoomUpdateResponse:
     result = await db.execute(select(Room).where(Room.id == room_id))
     room = result.scalar_one_or_none()
 
@@ -331,7 +353,7 @@ async def update_room(
 
     room.updated_at = datetime.datetime.now()
     await db.commit()
-    return {"status": "updated"}
+    return RoomUpdateResponse()
 
 
 async def get_room_user_ids(room_id: int, db: AsyncSession) -> list[int]:
