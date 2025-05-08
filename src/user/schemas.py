@@ -3,8 +3,12 @@ from typing import Annotated, Optional
 from pydantic import BaseModel, Field
 
 
-class UsernameUpdate(BaseModel):
+class UsernameUpdateRequest(BaseModel):
     username: Annotated[str, Field(min_length=3, max_length=16)]
+
+
+class UsernameUpdateResponse(BaseModel):
+    new_username: str
 
 
 class UserPublic(BaseModel):
@@ -12,4 +16,5 @@ class UserPublic(BaseModel):
     username: str
     email: str
     avatar_url: Optional[str] = None
-    status: Optional[str] = None
+
+    model_config = {"from_attributes": True}
