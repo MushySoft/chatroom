@@ -30,8 +30,8 @@ class Room(Base):
     updated_at: Mapped[datetime.datetime] = mapped_column(
         TIMESTAMP, default=datetime.datetime.now, nullable=False
     )
-    created_by: Mapped[int | None] = mapped_column(
-        ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    created_by: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"), nullable=False
     )
 
     creator: Mapped["User"] = relationship(back_populates="created_rooms")
