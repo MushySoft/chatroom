@@ -1,6 +1,6 @@
 import datetime
 import json
-from typing import Any, Optional
+from typing import Any
 
 from redis.asyncio import Redis
 
@@ -44,14 +44,14 @@ def serialize_datetime(obj: Any) -> str:
 
 async def get_cached_rooms(
     redis: Redis, user_id: int, limit: int, offset: int
-) -> Optional[list[dict[str, Any]]]:
+) -> str | None:
     key = TEMP_ROOMS_KEY.format(user_id=user_id, limit=limit, offset=offset)
     data = await redis.get(key)
     return json.loads(data) if data else None
 
 
 async def set_cached_rooms(
-    redis: Redis, user_id: int, limit: int, offset: int, data: list[dict[str, Any]]
+    redis: Redis, user_id: int, limit: int, offset: int, data: list[str]
 ) -> None:
     key = TEMP_ROOMS_KEY.format(user_id=user_id, limit=limit, offset=offset)
     await redis.setex(
@@ -61,17 +61,13 @@ async def set_cached_rooms(
     )
 
 
-async def get_cached_participants(
-    redis: Redis, room_id: int
-) -> Optional[list[dict[str, Any]]]:
+async def get_cached_participants(redis: Redis, room_id: int) -> str | None:
     key = TEMP_PARTICIPANTS_KEY.format(room_id=room_id)
     data = await redis.get(key)
     return json.loads(data) if data else None
 
 
-async def set_cached_participants(
-    redis: Redis, room_id: int, data: list[dict[str, Any]]
-) -> None:
+async def set_cached_participants(redis: Redis, room_id: int, data: list[str]) -> None:
     key = TEMP_PARTICIPANTS_KEY.format(room_id=room_id)
     await redis.setex(
         key,
@@ -86,7 +82,7 @@ async def delete_cached_participants(redis: Redis, room_id: int) -> None:
 
 async def get_cached_invites(
     redis: Redis, user_id: int, sent: bool, limit: int, offset: int
-) -> Optional[list[dict[str, Any]]]:
+) -> str | None:
     prefix = "sent" if sent else "received"
     key = TEMP_INVITES_KEY.format(
         user_id=user_id, prefix=prefix, limit=limit, offset=offset
@@ -101,7 +97,7 @@ async def set_cached_invites(
     sent: bool,
     limit: int,
     offset: int,
-    data: list[dict[str, Any]],
+    data: list[str],
 ) -> None:
     prefix = "sent" if sent else "received"
     key = TEMP_INVITES_KEY.format(
