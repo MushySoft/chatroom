@@ -8,12 +8,19 @@ from sqlalchemy.orm import selectinload
 
 from src import Pagination, clear_temp_files, get_temp_files
 from src.core import FileStorage, Message, MessageStatus, RoomUser, User
-from src.messages.schemas import MessageCreate, MessageDTO, MessageUpdate
+from src.messages.schemas import (
+    MessageCreateRequest,
+    MessageCreateResponse,
+    MessageDeleteResponse,
+    MessagePublic,
+    MessageUpdateRequest,
+    MessageUpdateResponse,
+)
 
 
 async def send_message(
-    data: MessageCreate, db: AsyncSession, redis: Redis, current_user: User
-) -> dict[str, int]:
+    data: MessageCreateRequest, db: AsyncSession, redis: Redis, current_user: User
+) -> MessageCreateResponse:
     new_msg = Message(
         room_id=data.room_id,
         sender_id=current_user.id,
@@ -30,7 +37,7 @@ async def send_message(
     participant_ids = participants_result.scalars().all()
 
     for user_id in participant_ids:
-        status_value = "sent" if user_id == current_user.id else "delivered"
+        status_value = "delivered"
         db.add(
             MessageStatus(
                 message_id=new_msg.id,
@@ -47,12 +54,12 @@ async def send_message(
     await db.commit()
     await clear_temp_files(redis, current_user.id)
 
-    return {"message_id": new_msg.id}
+    return MessageCreateResponse.model_validate(new_msg)
 
 
 async def get_message_by_id(
     message_id: int, db: AsyncSession, current_user: User
-) -> Optional[MessageDTO]:
+) -> Optional[MessagePublic]:
     result = await db.execute(
         select(Message)
         .options(selectinload(Message.files))
@@ -78,14 +85,14 @@ async def get_message_by_id(
     )
     await db.commit()
 
-    return MessageDTO(
+    return MessagePublic(
         id=message.id,
         room_id=message.room_id,
         sender_id=message.sender_id,
         content=message.content,
         created_at=message.created_at,
         updated_at=message.updated_at,
-        files=[f.file_url for f in message.files],
+        files=[file.file_url for file in message.files if file is not None],
     )
 
 
@@ -94,7 +101,7 @@ async def get_messages_by_room(
     db: AsyncSession,
     current_user: User,
     pagination: Pagination,
-) -> List[MessageDTO]:
+) -> List[MessagePublic]:
     result = await db.execute(
         select(Message)
         .options(selectinload(Message.files))
@@ -121,22 +128,22 @@ async def get_messages_by_room(
     await db.commit()
 
     return [
-        MessageDTO(
+        MessagePublic(
             id=msg.id,
             room_id=msg.room_id,
             sender_id=msg.sender_id,
             content=msg.content,
             created_at=msg.created_at,
             updated_at=msg.updated_at,
-            files=[f.file_url for f in msg.files],
+            files=[file.file_url for file in msg.files if file is not None],
         )
         for msg in messages
     ]
 
 
 async def update_message(
-    data: MessageUpdate, db: AsyncSession, current_user: User
-) -> dict[str, str]:
+    data: MessageUpdateRequest, db: AsyncSession, current_user: User
+) -> MessageUpdateResponse:
     result = await db.execute(
         select(Message)
         .where(Message.id == data.message_id)
@@ -172,12 +179,12 @@ async def update_message(
 
     await db.commit()
 
-    return {"message_id": str(message.id), "status": "updated"}
+    return MessageUpdateResponse(message_id=message.id)
 
 
 async def delete_message(
     message_id: int, db: AsyncSession, current_user: User
-) -> dict[str, str]:
+) -> MessageDeleteResponse:
     await db.execute(
         update(MessageStatus)
         .where(
@@ -187,4 +194,4 @@ async def delete_message(
         .values(status="deleted", updated_at=datetime.datetime.now())
     )
     await db.commit()
-    return {"message_id": str(message_id), "status": "deleted"}
+    return MessageDeleteResponse(message_id=message_id)

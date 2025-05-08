@@ -7,8 +7,8 @@ from src.auth import get_current_user_ws
 from src.core import User
 from src.messages.manager import manager
 from src.messages.schemas import (
-    MessageCreate,
-    MessageUpdate,
+    MessageCreateRequest,
+    MessageUpdateRequest,
 )
 from src.messages.service import (
     delete_message,
@@ -38,7 +38,7 @@ async def chat_ws(  # type: ignore[no-untyped-def]
 
             match action:
                 case "send_message":
-                    payload_create = MessageCreate(**data["data"])
+                    payload_create = MessageCreateRequest(**data["data"])
                     result_send = await send_message(
                         payload_create, db, redis, current_user
                     )
@@ -67,7 +67,7 @@ async def chat_ws(  # type: ignore[no-untyped-def]
                         )
 
                 case "edit_message":
-                    payload_update = MessageUpdate(**data["data"])
+                    payload_update = MessageUpdateRequest(**data["data"])
                     result_edit = await update_message(payload_update, db, current_user)
                     await manager.broadcast_to_room(
                         user_ids=await get_room_user_ids(room_id, db),

@@ -4,7 +4,10 @@ router = APIRouter(tags=["WebSocket Docs"], prefix="/docs/ws/chat")
 
 
 @router.get(
-    "", summary="WebSocket Chat API", description="Description WebSocket API for chat"
+    "",
+    summary="WebSocket Chat API",
+    description="Description WebSocket API for chat",
+    status_code=410,
 )
 def ws_chat_docs():  # type: ignore[no-untyped-def]
     return {
