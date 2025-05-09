@@ -10,4 +10,7 @@ lint:
 typecheck:
 	mypy src
 
-check: format lint typecheck
+test:
+	python -m pytest .
+
+check: format lint typecheck test
