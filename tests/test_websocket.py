@@ -66,10 +66,6 @@ def test_chat_ws_get_message():
 def test_chat_ws_send_message(monkeypatch):
     client = get_client(for_ws=True)
 
-    monkeypatch.setattr(
-        "src.messages.ws.get_room_user_ids", AsyncMock(return_value=[1])
-    )
-
     with client.websocket_connect("/ws/chat/1") as websocket:
         websocket.send_json(
             {
@@ -92,10 +88,6 @@ def test_chat_ws_send_message(monkeypatch):
 def test_chat_ws_edit_message(monkeypatch):
     client = get_client(for_ws=True)
 
-    monkeypatch.setattr(
-        "src.messages.ws.get_room_user_ids", AsyncMock(return_value=[1])
-    )
-
     with client.websocket_connect("/ws/chat/1") as websocket:
         websocket.send_json(
             {
@@ -116,10 +108,6 @@ def test_chat_ws_edit_message(monkeypatch):
 
 def test_chat_ws_delete_message(monkeypatch):
     client = get_client(for_ws=True)
-
-    monkeypatch.setattr(
-        "src.messages.ws.get_room_user_ids", AsyncMock(return_value=[1])
-    )
 
     with client.websocket_connect("/ws/chat/1") as websocket:
         websocket.send_json({"action": "delete_message", "message_id": 1})
