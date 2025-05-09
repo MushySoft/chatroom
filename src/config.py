@@ -1,5 +1,12 @@
+from pathlib import Path
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+if Path(".env").exists():
+    env_file_path = ".env"
+elif Path(".env.ci").exists():
+    env_file_path = ".env.ci"
+else:
+    env_file_path = None
 
 class Settings(BaseSettings):
     DATABASE_URL: str
@@ -23,7 +30,7 @@ class Settings(BaseSettings):
     MINIO_SECRET_KEY: str
     MINIO_BUCKET_NAME: str
 
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
+    model_config = SettingsConfigDict(env_file=env_file_path, env_file_encoding="utf-8")
 
 
 settings = Settings()  # type: ignore[call-arg]
