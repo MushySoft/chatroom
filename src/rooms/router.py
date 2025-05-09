@@ -159,12 +159,9 @@ async def respond_to_invite(  # type: ignore[no-untyped-def]
             domain=".mushysoft.online",
             max_age=settings.TOKEN_EXPIRE_SECONDS,
         )
-    try:
-        return await service.respond_to_invite(
-            data=data, db=db, current_user=user, redis=redis
-        )
-    except PermissionError as e:
-        raise HTTPException(status_code=403, detail=str(e))
+    return await service.respond_to_invite(
+        data=data, db=db, current_user=user, redis=redis
+    )
 
 
 @router.delete(
@@ -193,9 +190,9 @@ async def remove_user(  # type: ignore[no-untyped-def]
             max_age=settings.TOKEN_EXPIRE_SECONDS,
         )
 
-        return await service.remove_user_from_room(
-            room_id=room_id, user_id=user_id, db=db, current_user=user, redis=redis
-        )
+    return await service.remove_user_from_room(
+        room_id=room_id, user_id=user_id, db=db, current_user=user, redis=redis
+    )
 
 
 @router.delete(

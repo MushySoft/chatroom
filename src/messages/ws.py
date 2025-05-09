@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect
 from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src import get_db, get_redis
+from src import Pagination, get_db, get_redis
 from src.auth import get_current_user_ws
 from src.core import User
 from src.messages.manager import manager
@@ -44,17 +44,27 @@ async def chat_ws(  # type: ignore[no-untyped-def]
                     )
                     await manager.broadcast_to_room(
                         user_ids=await get_room_user_ids(room_id, db),
-                        message={"type": "new_message", "data": result_send},
+                        message={
+                            "type": "new_message",
+                            "data": result_send.model_dump(mode="json"),
+                        },
                     )
 
                 case "get_messages":
+                    pagination_data = data.get("pagination")
+                    pagination = (
+                        Pagination(**pagination_data)
+                        if pagination_data
+                        else Pagination()
+                    )
+
                     messages = await get_messages_by_room(
-                        room_id, db, current_user, pagination=data.get("pagination")
+                        room_id, db, current_user, pagination=pagination
                     )
                     await websocket.send_json(
                         {
                             "type": "message_history",
-                            "data": [m for m in messages],
+                            "data": [m.model_dump(mode="json") for m in messages],
                         }
                     )
 
@@ -63,7 +73,10 @@ async def chat_ws(  # type: ignore[no-untyped-def]
                     message = await get_message_by_id(msg_id, db, current_user)
                     if message:
                         await websocket.send_json(
-                            {"type": "message_detail", "data": message}
+                            {
+                                "type": "message_detail",
+                                "data": message.model_dump(mode="json"),
+                            }
                         )
 
                 case "edit_message":
@@ -71,7 +84,10 @@ async def chat_ws(  # type: ignore[no-untyped-def]
                     result_edit = await update_message(payload_update, db, current_user)
                     await manager.broadcast_to_room(
                         user_ids=await get_room_user_ids(room_id, db),
-                        message={"type": "message_edited", "data": result_edit},
+                        message={
+                            "type": "message_edited",
+                            "data": result_edit.model_dump(mode="json"),
+                        },
                     )
 
                 case "delete_message":
@@ -79,7 +95,10 @@ async def chat_ws(  # type: ignore[no-untyped-def]
                     result_delete = await delete_message(msg_id, db, current_user)
                     await manager.broadcast_to_room(
                         user_ids=await get_room_user_ids(room_id, db),
-                        message={"type": "message_deleted", "data": result_delete},
+                        message={
+                            "type": "message_deleted",
+                            "data": result_delete.model_dump(mode="json"),
+                        },
                     )
 
     except WebSocketDisconnect:
