@@ -13,6 +13,7 @@ from src.messages.schemas import (
     MessageCreateResponse,
     MessageDeleteResponse,
     MessagePublic,
+    MessageSender,
     MessageUpdateRequest,
     MessageUpdateResponse,
 )
@@ -85,14 +86,25 @@ async def get_message_by_id(
     )
     await db.commit()
 
+    status_result = await db.execute(
+        select(MessageStatus.status).where(
+            MessageStatus.message_id == message.id,
+            MessageStatus.user_id == current_user.id,
+        )
+    )
+    status = status_result.scalar_one_or_none() or "sent"
+
     return MessagePublic(
         id=message.id,
         room_id=message.room_id,
-        sender_id=message.sender_id,
+        sender_id=message.sender.id,
+        sender=MessageSender.model_validate(message.sender),
         content=message.content,
         created_at=message.created_at,
         updated_at=message.updated_at,
-        files=[file.file_url for file in message.files if file is not None],
+        files=[file.file_url for file in (message.files or []) if file is not None],
+        status=status,
+        is_owner=(message.sender_id == current_user.id),
     )
 
 
@@ -104,7 +116,7 @@ async def get_messages_by_room(
 ) -> List[MessagePublic]:
     result = await db.execute(
         select(Message)
-        .options(selectinload(Message.files))
+        .options(selectinload(Message.files), selectinload(Message.sender))
         .join(MessageStatus)
         .where(
             Message.room_id == room_id,
@@ -127,15 +139,26 @@ async def get_messages_by_room(
     )
     await db.commit()
 
+    status_result = await db.execute(
+        select(MessageStatus.message_id, MessageStatus.status).where(
+            MessageStatus.user_id == current_user.id,
+            MessageStatus.message_id.in_([m.id for m in messages]),
+        )
+    )
+    statuses = {mid: status for mid, status in status_result.scalars().all()}
+
     return [
         MessagePublic(
             id=msg.id,
             room_id=msg.room_id,
-            sender_id=msg.sender_id,
+            sender_id=msg.sender.id,
+            sender=MessageSender.model_validate(msg.sender),
             content=msg.content,
             created_at=msg.created_at,
             updated_at=msg.updated_at,
-            files=[file.file_url for file in msg.files if file is not None],
+            files=[f.file_url for f in (msg.files or []) if f is not None],
+            status=statuses.get(msg.id, "sent"),
+            is_owner=(msg.sender_id == current_user.id),
         )
         for msg in messages
     ]
