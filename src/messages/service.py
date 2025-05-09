@@ -47,12 +47,12 @@ async def send_message(
             )
         )
 
-    files = await get_temp_files(redis, current_user.id)
+    files = await get_temp_files(redis, current_user.id, room_id=data.room_id)
     for file in files:
         db.add(FileStorage(message_id=new_msg.id, file_url=file["url"]))
 
     await db.commit()
-    await clear_temp_files(redis, current_user.id)
+    await clear_temp_files(redis, current_user.id, data.room_id)
 
     return MessageCreateResponse.model_validate(new_msg)
 

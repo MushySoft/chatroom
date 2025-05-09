@@ -12,6 +12,7 @@ router = APIRouter(prefix="/files", tags=["files"])
 @router.post("/upload", summary="Upload file to MINIO")
 async def upload_file(  # type: ignore[no-untyped-def]
     response: Response,
+    room_id: int,
     result: tuple[User, str | None] = Depends(get_current_user),
     file: UploadFile = File(...),
     redis: Redis = Depends(get_redis),
@@ -27,4 +28,6 @@ async def upload_file(  # type: ignore[no-untyped-def]
             domain=".mushysoft.online",
             max_age=settings.TOKEN_EXPIRE_SECONDS,
         )
-    return await service.upload_file(file=file, redis=redis, current_user=user)
+    return await service.upload_file(
+        file=file, redis=redis, current_user=user, room_id=room_id
+    )
