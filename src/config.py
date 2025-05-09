@@ -1,12 +1,12 @@
 from pathlib import Path
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 if Path(".env").exists():
     env_file_path = ".env"
 elif Path(".env.ci").exists():
     env_file_path = ".env.ci"
-else:
-    env_file_path = None
+
 
 class Settings(BaseSettings):
     DATABASE_URL: str
