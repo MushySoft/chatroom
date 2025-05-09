@@ -52,10 +52,12 @@ class MockMessage:
         self.id = 1
         self.room_id = 1
         self.sender_id = 1
+        self.sender = MockUser()
         self.content = "Hello!"
         self.created_at = self.updated_at = datetime(2024, 1, 1)
         self.files = [MockFileStorage("https://example.com/file.jpg")]
         self.status = MockMessageStatus(self.id, self.sender_id, "delivered")
+        self.is_owner = True
 
 
 class MockFileStorage:

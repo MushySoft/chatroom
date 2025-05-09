@@ -39,13 +39,24 @@ class MessageDeleteResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class MessageSender(BaseModel):
+    id: int
+    username: str
+    avatar_url: Optional[str] = None
+
+    model_config = {"from_attributes": True}
+
+
 class MessagePublic(BaseModel):
     id: int
     room_id: int
     sender_id: int
+    sender: MessageSender
     content: str
     created_at: datetime
     updated_at: datetime
     files: List[str] = Field(default_factory=list)
+    status: str
+    is_owner: bool
 
     model_config = {"from_attributes": True}

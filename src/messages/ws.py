@@ -17,7 +17,6 @@ from src.messages.service import (
     send_message,
     update_message,
 )
-from src.rooms.service import get_room_user_ids
 
 router = APIRouter(prefix="/ws/chat", tags=["chat websocket"])
 
@@ -30,7 +29,7 @@ async def chat_ws(  # type: ignore[no-untyped-def]
     redis: Redis = Depends(get_redis),
     current_user: User = Depends(get_current_user_ws),
 ):
-    await manager.connect(current_user.id, websocket)
+    await manager.connect(current_user.id, websocket, room_id)
     try:
         while True:
             data = await websocket.receive_json()
@@ -42,8 +41,9 @@ async def chat_ws(  # type: ignore[no-untyped-def]
                     result_send = await send_message(
                         payload_create, db, redis, current_user
                     )
+                    online_users = manager.get_online_users_in_room(room_id)
                     await manager.broadcast_to_room(
-                        user_ids=await get_room_user_ids(room_id, db),
+                        user_ids=online_users,
                         message={
                             "type": "new_message",
                             "data": result_send.model_dump(mode="json"),
@@ -82,8 +82,9 @@ async def chat_ws(  # type: ignore[no-untyped-def]
                 case "edit_message":
                     payload_update = MessageUpdateRequest(**data["data"])
                     result_edit = await update_message(payload_update, db, current_user)
+                    online_users = manager.get_online_users_in_room(room_id)
                     await manager.broadcast_to_room(
-                        user_ids=await get_room_user_ids(room_id, db),
+                        user_ids=online_users,
                         message={
                             "type": "message_edited",
                             "data": result_edit.model_dump(mode="json"),
@@ -93,8 +94,9 @@ async def chat_ws(  # type: ignore[no-untyped-def]
                 case "delete_message":
                     msg_id = data["message_id"]
                     result_delete = await delete_message(msg_id, db, current_user)
+                    online_users = manager.get_online_users_in_room(room_id)
                     await manager.broadcast_to_room(
-                        user_ids=await get_room_user_ids(room_id, db),
+                        user_ids=online_users,
                         message={
                             "type": "message_deleted",
                             "data": result_delete.model_dump(mode="json"),

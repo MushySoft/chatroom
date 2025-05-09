@@ -13,7 +13,7 @@ def test_upload_file(mock_upload):
     client = get_client()
     file_content = b"fake image data"
     response = client.post(
-        "/files/upload",
+        "/files/upload?room_id=1",
         files={"file": ("test.jpg", io.BytesIO(file_content), "image/jpeg")},
     )
     assert response.status_code == 200
