@@ -89,7 +89,7 @@ async def get_message_by_id(
     status_result = await db.execute(
         select(MessageStatus.status).where(
             MessageStatus.message_id == message.id,
-            MessageStatus.user_id == current_user.id,
+            MessageStatus.user_id != current_user.id,
         )
     )
     status = status_result.scalar_one_or_none() or "sent"
@@ -133,7 +133,7 @@ async def get_messages_by_room(
         update(MessageStatus)
         .where(
             MessageStatus.message_id.in_([m.id for m in messages]),
-            MessageStatus.user_id == current_user.id,
+            MessageStatus.user_id != current_user.id,
         )
         .values(status="viewed", updated_at=datetime.datetime.now())
     )
