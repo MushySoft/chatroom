@@ -66,5 +66,24 @@ def test_get_all_rooms():
 
 def test_patch_room():
     client = get_client()
-    response = client.patch("/rooms/1", json={"name": "updated", "is_private": True})
+    response = client.patch("/rooms/1", json={"name": "updated", "is_private": False})
     assert response.status_code == 200
+
+
+def test_search_rooms():
+    client = get_client()
+    response = client.get("/rooms/search", params={"text": "test"})
+    assert response.status_code == 200
+    rooms = response.json()
+    assert isinstance(rooms, list)
+    for room in rooms:
+        assert "name" in room
+
+
+def test_join_public_room():
+    client = get_client()
+    response = client.post("/rooms/join/1")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["id"] == 1
+    assert data["is_private"] is False

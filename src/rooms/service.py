@@ -1,9 +1,10 @@
 import datetime
 import json
+from typing import Optional
 
 from fastapi import HTTPException
 from redis.asyncio import Redis
-from sqlalchemy import delete, select, update
+from sqlalchemy import delete, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src import Pagination
@@ -28,7 +29,9 @@ from src.rooms.schemas import (
     RoomInviteRespondRequest,
     RoomInviteRespondResponse,
     RoomInviteResponse,
+    RoomJoinResponse,
     RoomParticipantOut,
+    RoomSearchResponse,
     RoomUpdateRequest,
     RoomUpdateResponse,
     RoomWithLastMessageOut,
@@ -361,3 +364,66 @@ async def get_room_user_ids(room_id: int, db: AsyncSession) -> list[int]:
         select(RoomUser.user_id).where(RoomUser.room_id == room_id)
     )
     return list(result.scalars().all())
+
+
+async def get_available_rooms(
+    db: AsyncSession,
+    current_user: User,
+    text: Optional[str] = None,
+) -> list[RoomSearchResponse]:
+    stmt = (
+        select(Room)
+        .join(RoomUser, RoomUser.room_id == Room.id, isouter=True)
+        .where(
+            or_(
+                Room.is_private.is_(False),
+                RoomUser.user_id == current_user.id,
+            )
+        )
+        .distinct()
+        .order_by(Room.created_at.desc())
+    )
+
+    if text:
+        stmt = stmt.where(Room.name.ilike(f"%{text}%"))
+
+    result = await db.execute(stmt)
+    rooms = result.scalars().all()
+
+    return [
+        RoomSearchResponse(
+            id=room.id,
+            name=room.name,
+        )
+        for room in rooms
+    ]
+
+
+async def join_public_room(
+    room_id: int,
+    db: AsyncSession,
+    current_user: User,
+) -> RoomJoinResponse:
+    result = await db.execute(
+        select(Room).where(Room.id == room_id, Room.is_private.is_(False))
+    )
+    room = result.scalar_one_or_none()
+    if not room:
+        raise ValueError("Room not found or not public")
+
+    result = await db.execute(
+        select(RoomUser).where(
+            RoomUser.room_id == room_id,
+            RoomUser.user_id == current_user.id,
+        )
+    )
+    if result.scalar_one_or_none():
+        RoomJoinResponse.model_validate(room)
+    new_participant = RoomUser(
+        room_id=room_id,
+        user_id=current_user.id,
+    )
+    db.add(new_participant)
+    await db.commit()
+
+    return RoomJoinResponse.model_validate(room)

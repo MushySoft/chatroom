@@ -16,7 +16,9 @@ from src.rooms.schemas import (
     RoomInviteRespondRequest,
     RoomInviteRespondResponse,
     RoomInviteResponse,
+    RoomJoinResponse,
     RoomParticipantOut,
+    RoomSearchResponse,
     RoomUpdateRequest,
     RoomUpdateResponse,
     RoomWithLastMessageOut,
@@ -308,3 +310,55 @@ async def patch_room(  # type: ignore[no-untyped-def]
     return await service.update_room(
         room_id=room_id, data=data, db=db, current_user=user
     )
+
+
+@router.get(
+    "/search",
+    summary="Search rooms or get all available rooms",
+    response_model=list[RoomSearchResponse],
+    status_code=200,
+)
+async def search_rooms(  # type: ignore[no-untyped-def]
+    text: str,
+    response: Response,
+    result: tuple[User, str | None] = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    user, new_token = result
+    if new_token:
+        response.set_cookie(
+            key="access_token",
+            value=new_token,
+            httponly=True,
+            secure=True,
+            samesite="none",
+            domain=".mushysoft.online",
+            max_age=settings.TOKEN_EXPIRE_SECONDS,
+        )
+    return await service.get_available_rooms(text=text, db=db, current_user=user)
+
+
+@router.post(
+    "/join/{room_id}",
+    summary="Join room",
+    response_model=RoomJoinResponse,
+    status_code=200,
+)
+async def join_public_room(  # type: ignore[no-untyped-def]
+    room_id: int,
+    response: Response,
+    result: tuple[User, str | None] = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    user, new_token = result
+    if new_token:
+        response.set_cookie(
+            key="access_token",
+            value=new_token,
+            httponly=True,
+            secure=True,
+            samesite="none",
+            domain=".mushysoft.online",
+            max_age=settings.TOKEN_EXPIRE_SECONDS,
+        )
+    return await service.join_public_room(room_id=room_id, db=db, current_user=user)
