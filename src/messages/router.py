@@ -154,3 +154,32 @@ async def delete_message(  # type: ignore[no-untyped-def]
             max_age=settings.TOKEN_EXPIRE_SECONDS,
         )
     return await service.delete_message(message_id=message_id, db=db, current_user=user)
+
+
+@router.get(
+    "/search/{text}",
+    summary="Search a message",
+    response_model=list[MessagePublic],
+    status_code=200,
+)
+async def search_messages(  # type: ignore[no-untyped-def]
+    room_id: int,
+    text: str,
+    response: Response,
+    result: tuple[User, str | None] = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    user, new_token = result
+    if new_token:
+        response.set_cookie(
+            key="access_token",
+            value=new_token,
+            httponly=True,
+            secure=True,
+            samesite="none",
+            domain=".mushysoft.online",
+            max_age=settings.TOKEN_EXPIRE_SECONDS,
+        )
+    return await service.search_messages(
+        room_id=room_id, text=text, db=db, current_user=user
+    )

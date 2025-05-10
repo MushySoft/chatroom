@@ -218,3 +218,40 @@ async def delete_message(
     )
     await db.commit()
     return MessageDeleteResponse(message_id=message_id)
+
+
+async def search_messages(
+    room_id: int, text: Optional[str], db: AsyncSession, current_user: User
+) -> list[MessagePublic]:
+    query = (
+        select(Message)
+        .options(selectinload(Message.files), selectinload(Message.sender))
+        .join(MessageStatus)
+        .where(
+            Message.room_id == room_id,
+            MessageStatus.status.in_(["delivered", "viewed"]),
+        )
+        .order_by(Message.created_at)
+    )
+
+    if text:
+        query = query.where(Message.content.ilike(f"%{text}%"))
+
+    result = await db.execute(query)
+    messages = result.scalars().all()
+
+    return [
+        MessagePublic(
+            id=msg.id,
+            room_id=msg.room_id,
+            sender_id=msg.sender.id,
+            sender=MessageSender.model_validate(msg.sender),
+            content=msg.content,
+            created_at=msg.created_at,
+            updated_at=msg.updated_at,
+            files=[f.file_url for f in (msg.files or []) if f is not None],
+            status=None,
+            is_owner=(msg.sender_id == current_user.id),
+        )
+        for msg in messages
+    ]

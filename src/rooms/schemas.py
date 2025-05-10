@@ -89,3 +89,20 @@ class RemoveUserResponse(BaseModel):
 
 class LeaveRoomResponse(BaseModel):
     status: str = "left"
+
+
+class RoomSearchResponse(BaseModel):
+    id: int
+    name: str
+
+    model_config = {"from_attributes": True}
+
+
+class RoomJoinResponse(BaseModel):
+    id: int
+    name: str
+    is_private: bool
+    created_by: int
+    created_at: datetime
+
+    model_config = {"from_attributes": True}

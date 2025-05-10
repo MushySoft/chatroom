@@ -49,3 +49,13 @@ def test_delete_message():
     data = response.json()
     assert data["message_id"] == 1
     assert data["status"] == "deleted"
+
+
+def test_search_messages_in_room():
+    client = get_client()
+
+    search_resp = client.get("/messages/search/hello", params={"room_id": 1})
+    assert search_resp.status_code == 200
+    messages = search_resp.json()
+    assert isinstance(messages, list)
+    assert any("hello" in msg["content"].lower() for msg in messages)
