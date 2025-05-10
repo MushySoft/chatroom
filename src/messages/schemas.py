@@ -56,7 +56,7 @@ class MessagePublic(BaseModel):
     created_at: datetime
     updated_at: datetime
     files: List[str] = Field(default_factory=list)
-    status: str
+    status: str | None
     is_owner: bool
 
     model_config = {"from_attributes": True}
